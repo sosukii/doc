@@ -11,13 +11,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Устанавливаем Node.js 22 (или 24) и включаем кеш npm
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # Ставим зависимости детерминированно
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
       - name: Lint
         run: npm run lint
+
       - name: Unit Tests
         run: npm run test:unit
+
       - name: Build
         run: npm run build
+
       - name: E2E Tests
         run: npm run test:e2e

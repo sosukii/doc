@@ -1,4 +1,6 @@
 import type { Config } from 'tailwindcss'
+import containerQueries from '@tailwindcss/container-queries'
+import forms from '@tailwindcss/forms'
 
 export default <Partial<Config>>{
   theme: {
@@ -36,8 +38,9 @@ export default <Partial<Config>>{
       }
     },
   },
+
   plugins: [
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/container-queries'),
+    forms,
+    containerQueries,
   ],
 }

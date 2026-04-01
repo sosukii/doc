@@ -7,7 +7,7 @@ const breadcrumbs = computed(() => {
   const crumbs = [{ name: 'Главная', to: '/' }]
 
   let currentPath = ''
-  segments.forEach((segment, index) => {
+  segments.forEach((segment) => {
     currentPath += `/${segment}`
     // Basic mapping for human-readable names
     let name = segment.charAt(0).toUpperCase() + segment.slice(1)

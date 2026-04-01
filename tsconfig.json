@@ -1,18 +1,14 @@
 {
   // https://nuxt.com/docs/guide/concepts/typescript
   "files": [],
+  "compilerOptions": {
+    // временно подавляем ошибки от устаревших флагов (например, downlevelIteration)
+    "ignoreDeprecations": "6.0"
+  },
   "references": [
-    {
-      "path": "./.nuxt/tsconfig.app.json"
-    },
-    {
-      "path": "./.nuxt/tsconfig.server.json"
-    },
-    {
-      "path": "./.nuxt/tsconfig.shared.json"
-    },
-    {
-      "path": "./.nuxt/tsconfig.node.json"
-    }
+    { "path": "./.nuxt/tsconfig.app.json" },
+    { "path": "./.nuxt/tsconfig.server.json" },
+    { "path": "./.nuxt/tsconfig.shared.json" },
+    { "path": "./.nuxt/tsconfig.node.json" }
   ]
 }

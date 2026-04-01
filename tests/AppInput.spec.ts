@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import AppInput from '../components/ui/AppInput.vue'
+import AppInput from '@/components/ui/AppInput.vue'
 
 describe('AppInput', () => {
   it('renders correctly with label', () => {

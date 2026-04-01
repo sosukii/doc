@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import AppButton from '../components/ui/AppButton.vue'
+import AppButton from '@/components/ui/AppButton.vue'
 
 describe('AppButton', () => {
   it('renders correctly with default props', () => {

@@ -34,4 +34,4 @@ jobs:
 
       # Запускаем Nuxt-сервер и e2e тесты: когда сервер доступен, Cypress стартует
       - name: E2E Tests
-        run: npx start-server-and-test "npm run preview -- -p 3000" http://localhost:3000 "npm run test:e2e"
+        run: npx start-server-and-test "npm run dev" http://localhost:3000 "npm run test:e2e"

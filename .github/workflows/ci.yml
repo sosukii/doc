@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   build:
@@ -32,5 +32,6 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Запускаем Nuxt-сервер и e2e тесты: когда сервер доступен, Cypress стартует
       - name: E2E Tests
-        run: npm run test:e2e
+        run: npx start-server-and-test "npm run preview -- -p 3000" http://localhost:3000 "npm run test:e2e"

@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "catalog": "Catalog",
+    "services": "Services",
+    "brands": "Brands",
+    "delivery": "Delivery",
+    "contacts": "Contacts"
+  },
+  "hero": {
+    "title": "The Future of Atmosphere is Here",
+    "subtitle": "We create spaces where technology is invisible and feelings are unforgettable. Precision in every detail.",
+    "cta_catalog": "Browse Catalog",
+    "cta_cases": "Our Cases"
+  }
+}

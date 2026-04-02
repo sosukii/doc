@@ -1,6 +1,11 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  app: { baseURL: '/doc/' },
+  app: {
+    baseURL: process.env.NUXT_APP_BASE_URL || '/doc/',
+  },
+  nitro: {
+    preset: 'github-pages',
+  },
   compatibilityDate: '2024-11-01',
   future: {
     compatibilityVersion: 4,
@@ -44,8 +49,4 @@ export default defineNuxtConfig({
   image: {
     domains: ['dummyjson.com']
   },
-
-  nitro: {
-    preset: 'cloudflare-pages'
-  }
 })

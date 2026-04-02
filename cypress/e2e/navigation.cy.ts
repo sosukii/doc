@@ -1,5 +1,6 @@
 describe('Main Navigation and User Scenarios', () => {
   beforeEach(() => {
+    cy.viewport(1280, 800)
     cy.visit('/')
   })
 

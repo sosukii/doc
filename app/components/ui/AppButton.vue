@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { NuxtLink } from '#components'
+
 interface Props {
   variant?: 'primary' | 'glass' | 'text'
   to?: string
@@ -18,7 +20,7 @@ withDefaults(defineProps<Props>(), {
 
 <template>
   <component
-    :is="to ? 'NuxtLink' : 'button'"
+    :is="to ? NuxtLink : 'button'"
     :to="to"
     :type="!to ? type : undefined"
     :disabled="disabled || loading"

@@ -13,8 +13,14 @@ interface Product {
   rating: number
 }
 
+interface Category {
+  slug: string
+  name: string
+  url: string
+}
+
 const products = ref<Product[]>([])
-const categories = ref<string[]>([])
+const categories = ref<Category[]>([])
 const selectedCategory = ref('')
 const searchQuery = ref('')
 const limit = 12
@@ -29,7 +35,7 @@ if (initialData.value) {
   skip.value = 12
 }
 
-const { data: categoryData } = await useFetch<string[]>('https://dummyjson.com/products/categories')
+const { data: categoryData } = await useFetch<Category[]>('https://dummyjson.com/products/categories')
 if (categoryData.value) {
   categories.value = categoryData.value
 }
@@ -37,7 +43,7 @@ if (categoryData.value) {
 const fetchMore = async () => {
   if (loading.value || !hasMore.value) return
   loading.value = true
-  
+
   let url = `https://dummyjson.com/products?limit=${limit}&skip=${skip.value}`
   if (selectedCategory.value) {
     url = `https://dummyjson.com/products/category/${selectedCategory.value}?limit=${limit}&skip=${skip.value}`
@@ -62,7 +68,7 @@ const handleFilter = async () => {
 }
 
 // Intersection Observer for infinite scroll
-const observerTarget = ref(null)
+const observerTarget = ref<HTMLElement | null>(null)
 onMounted(() => {
   const observer = new IntersectionObserver((entries) => {
     if (entries[0].isIntersecting) {
@@ -104,9 +110,12 @@ useSeoMeta({
             class="input-field bg-surface-container-lowest border-none rounded-lg px-4 py-2 text-white/70 focus:ring-2 focus:ring-secondary/50 h-full min-h-[42px] appearance-none cursor-pointer"
           >
             <option value="">Все категории</option>
-            <option v-for="cat in categories" :key="cat" :value="cat">
-              {{ cat }}
-              <!-- {{ cat.charAt(0).toUpperCase() + cat.slice(1) }} -->
+            <option
+              v-for="cat in categories"
+              :key="cat.slug"
+              :value="cat.slug"
+            >
+              {{ cat.name }}
             </option>
           </select>
         </div>
@@ -130,7 +139,7 @@ useSeoMeta({
               ${{ product.price }}
             </div>
           </div>
-          
+
           <div class="flex-grow flex flex-col gap-2">
             <div class="text-xs text-white/40 uppercase tracking-widest">{{ product.category }}</div>
             <h3 class="text-lg font-heading font-bold line-clamp-1 group-hover:text-primary transition-colors">

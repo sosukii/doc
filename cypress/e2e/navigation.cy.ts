@@ -23,7 +23,8 @@ describe('Main Navigation and User Scenarios', () => {
 
   it('can open a product detail page', () => {
     cy.visit('/products')
-    cy.get('.grid').first().find('a').click()
+    // cy.get('.grid').first().find('a').click()
+    cy.get('.grid').find('a').first().click()
     cy.url().should('match', /\/products\/\d+/)
     cy.get('h1').should('be.visible')
   })

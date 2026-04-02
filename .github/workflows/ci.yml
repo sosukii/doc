@@ -35,3 +35,8 @@ jobs:
       # Запускаем Nuxt-сервер и e2e тесты: когда сервер доступен, Cypress стартует
       - name: E2E Tests
         run: npx start-server-and-test "npm run dev" http://localhost:3000 "npm run test:e2e"
+
+      - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v2
+        with: { path: dist }    # папка с билдом
+      - uses: actions/deploy-pages@v4

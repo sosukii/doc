@@ -34,8 +34,8 @@ jobs:
         run: npm run test:unit
 
       # Запускаем dev‑сервер и e2e‑тесты (как раньше)
-      # - name: E2E tests
-      #   run: npx start-server-and-test "npm run dev" http://localhost:3000 "npm run test:e2e"
+      - name: E2E tests
+        run: npx start-server-and-test "npm run dev" http://localhost:3000 "npm run test:e2e"
 
       # Сборка статического сайта для GitHub Pages
       - name: Build site

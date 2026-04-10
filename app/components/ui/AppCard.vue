@@ -3,7 +3,6 @@ interface Props {
   variant?: 'low' | 'medium' | 'high'
   hoverEffect?: boolean
 }
-
 withDefaults(defineProps<Props>(), {
   variant: 'medium',
   hoverEffect: true
@@ -26,10 +25,9 @@ withDefaults(defineProps<Props>(), {
       <slot name="header" />
     </div>
     
-    <div class="content">
+    <div class="content flex flex-col h-full">
       <slot />
     </div>
-
     <div v-if="$slots.footer" class="mt-6">
       <slot name="footer" />
     </div>

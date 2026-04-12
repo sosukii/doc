@@ -26,9 +26,29 @@ export default defineNuxtConfig({
 
   routeRules: isProduction
     ? {
-        '/': { prerender: true },
-        '/products': { prerender: true },
-        '/products/*': { prerender: true },
+        '/': {
+          prerender: true,
+          headers: {
+            'cache-control': 'public, max-age=0, s-maxage=600, stale-while-revalidate=86400'
+          }
+        },
+        '/products': {
+          prerender: true,
+          headers: {
+            'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+          }
+        },
+        '/products/**': {
+          prerender: true,
+          headers: {
+            'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+          }
+        },
+        '/_nuxt/**': {
+          headers: {
+            'cache-control': 'public, max-age=31536000, immutable'
+          }
+        },
       }
     : {},
 

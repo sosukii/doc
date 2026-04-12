@@ -1,77 +1,39 @@
 <script setup lang="ts">
-// import { computed } from 'vue'
 import AppButton from '~/components/ui/AppButton.vue'
 import AppCard from '~/components/ui/AppCard.vue'
 import AppInput from '~/components/ui/AppInput.vue'
 import AppPagination from '~/components/ui/AppPagination.vue'
-
-interface Product {
-  _id: string
-  title: string
-  slug: string
-  description: string
-  price: number
-  images: string[]
-  category: string
-  isPublished: boolean
-  createdAt?: string
-  updatedAt?: string
-}
-
-interface ProductsResponse {
-  items: Product[]
-  total: number
-  page: number
-  limit: number
-  totalPages: number
-}
+import { useCatalog } from '~/composables/useCatalog'
 
 const route = useRoute()
 const router = useRouter()
+const {
+  getCachedCatalogResponses,
+  getCachedProductsPage,
+  defaultProductsResponse,
+  buildCatalogCacheKey,
+  fetchProductsPage: getProductsPage,
+  prefetchProductImages
+} = useCatalog()
 
 const selectedCategory = ref('')
 const searchQuery = ref('')
 const debouncedSearchQuery = ref('')
 const currentPage = ref(Math.max(1, Number(route.query.page) || 1))
-const perPage = 12
+const catalogViewportReady = useState('catalog-viewport-ready', () => false)
 
 const isClientReady = ref(false)
+const loadedProductImages = ref<Record<string, true>>({})
+const lastBackgroundPrefetchKey = ref('')
+const activePrefetchScenarioId = ref(0)
+const visibleImageCount = 4
 
 onMounted(() => {
   isClientReady.value = true
 })
 
-const config = useRuntimeConfig()
-const apiBase = config.public.apiBase || 'https://doc-api-r2vu.onrender.com'
-
-const productsCache = useState<Record<string, ProductsResponse>>('catalog-products-cache', () => ({}))
-
-const defaultProductsResponse = (): ProductsResponse => ({
-  items: [],
-  total: 0,
-  page: 1,
-  limit: perPage,
-  totalPages: 1
-})
-
-const buildProductsQuery = (page: number, search: string, category: string) => ({
-  page,
-  limit: perPage,
-  search: search || undefined,
-  category: category || undefined
-})
-
-const buildCacheKey = (page: number, search: string, category: string) => {
-  return JSON.stringify({
-    page,
-    limit: perPage,
-    search: search || '',
-    category: category || ''
-  })
-}
-
 const requestKey = computed(() => {
-  return buildCacheKey(
+  return buildCatalogCacheKey(
     currentPage.value,
     debouncedSearchQuery.value.trim(),
     selectedCategory.value
@@ -97,47 +59,21 @@ onBeforeUnmount(() => {
 })
 
 watch([debouncedSearchQuery, selectedCategory], () => {
+  const nextQuery = { ...route.query }
+
+  delete nextQuery.page
+  router.replace({ query: nextQuery })
   currentPage.value = 1
 })
 
-watch(currentPage, (page) => {
-  const nextQuery = { ...route.query }
-
-  if (page > 1) {
-    nextQuery.page = String(page)
-  } else {
-    delete nextQuery.page
-  }
-
-  router.replace({ query: nextQuery })
+watch(requestKey, () => {
+  loadedProductImages.value = {}
+  catalogViewportReady.value = false
 })
 
-const fetchProductsPage = async (page: number, search: string, category: string, useCache = true) => {
-  const normalizedSearch = search.trim()
-  const cacheKey = buildCacheKey(page, normalizedSearch, category)
-
-  if (useCache && productsCache.value[cacheKey]) {
-    return productsCache.value[cacheKey]
-  }
-
-  try {
-    const response = await $fetch<ProductsResponse>('/api/products', {
-      baseURL: apiBase,
-      query: buildProductsQuery(page, normalizedSearch, category)
-    })
-
-    productsCache.value[cacheKey] = response
-    return response
-  } catch(e) {
-    console.error('API error', e)
-
-    return productsCache.value[cacheKey] || defaultProductsResponse()
-  }
-}
-
-const { data, pending } = await useAsyncData(
+const { data, pending, refresh } = await useAsyncData(
   () => `catalog:${requestKey.value}`,
-  () => fetchProductsPage(currentPage.value, debouncedSearchQuery.value, selectedCategory.value),
+  () => getProductsPage(currentPage.value, debouncedSearchQuery.value, selectedCategory.value),
   {
     server: false,
     lazy: true,
@@ -148,39 +84,112 @@ const { data, pending } = await useAsyncData(
 
 const products = computed(() => data.value?.items ?? [])
 const totalPages = computed(() => data.value?.totalPages || 1)
+const visibleProducts = computed(() => products.value.slice(0, visibleImageCount))
+const allVisibleImagesReady = computed(() => {
+  if (!visibleProducts.value.length) {
+    return true
+  }
 
-const prefetchNextPage = async () => {
-  if (pending.value) return
-  if (currentPage.value >= totalPages.value) return
+  return visibleProducts.value.every(product => loadedProductImages.value[product._id])
+})
 
-  const nextPage = currentPage.value + 1
-  const search = debouncedSearchQuery.value
+const currentPageFullyReady = computed(() => {
+  return isClientReady.value && !pending.value && allVisibleImagesReady.value
+})
+
+const waitForIdleTime = async () => {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  if ('requestIdleCallback' in window) {
+    await new Promise<void>((resolve) => {
+      window.requestIdleCallback(() => resolve(), { timeout: 1000 })
+    })
+    return
+  }
+
+  await new Promise((resolve) => {
+    window.setTimeout(resolve, 120)
+  })
+}
+
+const markProductImageLoaded = (productId: string) => {
+  if (loadedProductImages.value[productId]) {
+    return
+  }
+
+  loadedProductImages.value = {
+    ...loadedProductImages.value,
+    [productId]: true
+  }
+}
+
+const prefetchCatalogPage = async (page: number, scenarioId: number) => {
+  if (page < 1 || page > totalPages.value || scenarioId !== activePrefetchScenarioId.value) {
+    return
+  }
+
+  const search = debouncedSearchQuery.value.trim()
   const category = selectedCategory.value
-  const nextKey = buildCacheKey(nextPage, search.trim(), category)
+  const cacheKey = buildCatalogCacheKey(page, search, category)
+  const cachedResponse = getCachedProductsPage(cacheKey)
 
-  if (productsCache.value[nextKey]) {
+  if (cachedResponse) {
+    await prefetchProductImages(cachedResponse, visibleImageCount, 'low')
     return
   }
 
   try {
-    await fetchProductsPage(nextPage, search, category)
+    await waitForIdleTime()
+
+    if (scenarioId !== activePrefetchScenarioId.value) {
+      return
+    }
+
+    const response = await getProductsPage(page, search, category)
+
+    if (scenarioId !== activePrefetchScenarioId.value) {
+      return
+    }
+
+    await prefetchProductImages(response, visibleImageCount, 'low')
   } catch {
-    console.log('Prefetch failed for page', nextPage)
+    console.log('Prefetch failed for page', page)
   }
 }
 
-watch(
-  () => data.value,
-  () => {
-    prefetchNextPage()
-  },
-  { immediate: true }
-)
+const startNeighborPrefetch = async () => {
+  if (!currentPageFullyReady.value) {
+    return
+  }
+
+  if (lastBackgroundPrefetchKey.value === requestKey.value) {
+    return
+  }
+
+  lastBackgroundPrefetchKey.value = requestKey.value
+  activePrefetchScenarioId.value += 1
+
+  const scenarioId = activePrefetchScenarioId.value
+  const nextPage = currentPage.value + 1
+  const previousPage = currentPage.value - 1
+
+  await prefetchCatalogPage(nextPage, scenarioId)
+
+  if (scenarioId !== activePrefetchScenarioId.value) {
+    return
+  }
+
+  if (previousPage >= 1) {
+    await prefetchCatalogPage(previousPage, scenarioId)
+  }
+}
 
 const categories = computed(() => {
   const uniqueCategories = new Set<string>()
 
-  Object.values(productsCache.value).forEach((response) => {
+  getCachedCatalogResponses().forEach((response) => {
     response.items.forEach((product) => {
       if (product.category) {
         uniqueCategories.add(product.category)
@@ -207,9 +216,88 @@ const handlePageChange = (page: number) => {
     return
   }
 
+  const nextQuery = { ...route.query }
+
+  if (page > 1) {
+    nextQuery.page = String(page)
+  } else {
+    delete nextQuery.page
+  }
+
+  router.push({ query: nextQuery })
   currentPage.value = page
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
+
+watch(
+  () => route.query.page,
+  (page) => {
+    const normalizedPage = Math.max(1, Number(page) || 1)
+
+    if (normalizedPage !== currentPage.value) {
+      currentPage.value = normalizedPage
+    }
+  }
+)
+
+watch(
+  () => getCachedProductsPage(requestKey.value),
+  (cachedResponse) => {
+    if (!cachedResponse) {
+      return
+    }
+
+    if (data.value === cachedResponse) {
+      return
+    }
+
+    data.value = cachedResponse
+  }
+)
+
+watch(
+  requestKey,
+  () => {
+    if (!getCachedProductsPage(requestKey.value)) {
+      refresh()
+    }
+  }
+)
+
+watch(
+  currentPageFullyReady,
+  (isReady) => {
+    if (!isReady) {
+      return
+    }
+
+    catalogViewportReady.value = true
+    void startNeighborPrefetch()
+  },
+  { immediate: true }
+)
+
+watch(
+  products,
+  async (currentProducts) => {
+    if (!currentProducts.length) {
+      return
+    }
+
+    await prefetchProductImages(
+      {
+        items: currentProducts,
+        total: data.value?.total ?? currentProducts.length,
+        page: currentPage.value,
+        limit: data.value?.limit ?? currentProducts.length,
+        totalPages: totalPages.value
+      },
+      visibleImageCount,
+      'high'
+    )
+  },
+  { immediate: true }
+)
 
 useSeoMeta({
   title: 'Каталог продукции - Avent',
@@ -249,7 +337,7 @@ useSeoMeta({
 
       <div v-if="isClientReady && !pending && products.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         <AppCard
-          v-for="product in products"
+          v-for="(product, index) in products"
           :key="product._id"
           class="flex flex-col group h-full"
           variant="medium"
@@ -259,7 +347,10 @@ useSeoMeta({
               :src="product.images?.[0] || 'https://via.placeholder.com/600x600?text=No+Image'"
               :alt="product.title"
               class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
+              :loading="index < visibleImageCount ? 'eager' : 'lazy'"
+              :fetchpriority="index < visibleImageCount ? 'high' : 'low'"
+              @load="markProductImageLoaded(product._id)"
+              @error="markProductImageLoaded(product._id)"
             />
             <div class="absolute top-4 right-4 glass-panel px-3 py-1 text-xs font-bold text-secondary">
               ${{ product.price }}
@@ -293,8 +384,8 @@ useSeoMeta({
       <div v-if="!isClientReady || pending" class="py-12 flex flex-col items-center justify-center gap-4">
         <div class="animate-spin text-secondary">
           <svg class="h-8 w-8" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
         </div>
         <p class="text-sm text-white/50">Загружаем товары...</p>

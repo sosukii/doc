@@ -20,6 +20,14 @@ interface Product {
   updatedAt?: string
 }
 
+interface ProductsResponse {
+  items: Product[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
 const route = useRoute()
 const config = useRuntimeConfig()
 const productSlug = computed(() => String(route.params.id || ''))
@@ -37,15 +45,35 @@ const { data: product, error } = await useFetch<Product>(`/api/products/${produc
   baseURL: apiBase,
 })
 
-const { data: allProducts } = await useFetch<Product[]>('/api/products', {
+const relatedQuery = computed(() => {
+  if (!product.value?.category) {
+    return null
+  }
+
+  return {
+    category: product.value.category,
+    page: 1,
+    limit: 4
+  }
+})
+
+const { data: relatedData } = await useFetch<ProductsResponse>('/api/products', {
   baseURL: apiBase,
-  default: () => []
+  query: relatedQuery,
+  default: () => ({
+    items: [],
+    total: 0,
+    page: 1,
+    limit: 4,
+    totalPages: 1
+  })
 })
 
 const relatedProducts = computed(() => {
   if (!product.value) return []
-  return (allProducts.value ?? [])
-    .filter(item => item.slug !== product.value?.slug && item.category === product.value?.category)
+
+  return (relatedData.value?.items ?? [])
+    .filter(item => item.slug !== product.value?.slug)
     .slice(0, 4)
 })
 

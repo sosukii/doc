@@ -23,8 +23,12 @@ describe('Main Navigation and User Scenarios', () => {
 
   it('can open a product detail page', () => {
     cy.visit('/products')
-    cy.get('.grid').find('a').first().click()
-    cy.url().should('match', /\/products\/\d+/)
+    cy.get('.grid').first().find('a[href*="/products/"]').first()
+      .should('have.attr', 'href')
+      .then((href) => {
+        cy.visit(String(href))
+      })
+    cy.url().should('match', /\/products\/[^/]+$/)
     cy.get('h1').should('be.visible')
   })
 })

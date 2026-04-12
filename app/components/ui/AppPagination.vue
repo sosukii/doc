@@ -70,8 +70,8 @@ const goToPage = (page: number) => {
     </button>
 
     <button
-      v-for="item in pages"
-      :key="`page-${item}`"
+      v-for="(item, index) in pages"
+      :key="`page-${item}-${index}`"
       type="button"
       class="min-w-10 h-10 px-3 rounded-lg transition"
       :class="item === page

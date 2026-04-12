@@ -35,6 +35,12 @@ const debouncedSearchQuery = ref('')
 const currentPage = ref(Math.max(1, Number(route.query.page) || 1))
 const perPage = 12
 
+const isClientReady = ref(false)
+
+onMounted(() => {
+  isClientReady.value = true
+})
+
 const config = useRuntimeConfig()
 const apiBase = config.public.apiBase || 'https://doc-api-r2vu.onrender.com'
 
@@ -241,7 +247,7 @@ useSeoMeta({
         </div>
       </div>
 
-      <div v-if="!pending && products.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      <div v-if="isClientReady && !pending && products.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         <AppCard
           v-for="product in products"
           :key="product._id"
@@ -277,14 +283,14 @@ useSeoMeta({
       </div>
 
       <AppPagination
-        v-if="!pending && totalPages > 1"
+        v-if="isClientReady && !pending && totalPages > 1"
         class="mt-12"
         :page="currentPage"
         :total-pages="totalPages"
         @change="handlePageChange"
       />
 
-      <div v-if="pending" class="py-12 flex flex-col items-center justify-center gap-4">
+      <div v-if="!isClientReady || pending" class="py-12 flex flex-col items-center justify-center gap-4">
         <div class="animate-spin text-secondary">
           <svg class="h-8 w-8" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
@@ -294,7 +300,7 @@ useSeoMeta({
         <p class="text-sm text-white/50">Загружаем товары...</p>
       </div>
 
-      <div v-else-if="!products.length" class="py-12 text-center text-white/40 text-sm">
+      <div v-else-if="isClientReady && !products.length" class="py-12 text-center text-white/40 text-sm">
         Товары не найдены.
       </div>
     </div>

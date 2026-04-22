@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import AppButton from '~/components/ui/AppButton.vue'
 import AppCard from '~/components/ui/AppCard.vue'
+import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 
 interface Product {
   _id: string
@@ -30,6 +31,7 @@ interface ProductsResponse {
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const { waitForIdleTime } = useBackgroundPrefetchQueue()
 const productSlug = computed(() => String(route.params.id || ''))
 const apiBase = config.public.apiBase || 'https://doc-api-r2vu.onrender.com'
 const fallbackImage = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
@@ -43,6 +45,7 @@ const fallbackImage = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
 
 const { data: product, error } = await useFetch<Product>(`/api/products/${productSlug.value}`, {
   baseURL: apiBase,
+  key: `product:${productSlug.value}`
 })
 
 const relatedQuery = computed(() => {
@@ -57,28 +60,44 @@ const relatedQuery = computed(() => {
   }
 })
 
-const { data: relatedData } = await useFetch<ProductsResponse>('/api/products', {
-  baseURL: apiBase,
-  query: relatedQuery,
-  default: () => ({
-    items: [],
-    total: 0,
-    page: 1,
-    limit: 4,
-    totalPages: 1
-  })
-})
+const {
+  data: relatedData,
+  execute: loadRelatedProducts,
+  pending: pendingRelatedProducts
+} = await useAsyncData(
+  () => `related-products:${product.value?.category || 'empty'}`,
+  () => $fetch<ProductsResponse>('/api/products', {
+    baseURL: apiBase,
+    query: relatedQuery.value || undefined
+  }),
+  {
+    server: false,
+    immediate: false,
+    default: () => ({
+      items: [],
+      total: 0,
+      page: 1,
+      limit: 4,
+      totalPages: 1
+    })
+  }
+)
 
 const relatedProducts = computed(() => {
-  if (!product.value) return []
+  if (!product.value) {
+    return []
+  }
 
   return (relatedData.value?.items ?? [])
-    .filter(item => item.slug !== product.value?.slug)
+    .filter((item) => item.slug !== product.value?.slug)
     .slice(0, 4)
 })
 
 const galleryImages = computed(() => {
-  if (!product.value?.images?.length) return [fallbackImage]
+  if (!product.value?.images?.length) {
+    return [fallbackImage]
+  }
+
   return product.value.images
 })
 
@@ -92,6 +111,25 @@ if (error.value || !product.value) {
   throw createError({ statusCode: 404, statusMessage: 'Product not found' })
 }
 
+useHead(() => ({
+  link: galleryImages.value.slice(0, 1).map((href) => ({
+    rel: 'preload',
+    as: 'image',
+    href,
+    fetchpriority: 'high',
+    crossorigin: ''
+  }))
+}))
+
+onMounted(async () => {
+  if (!relatedQuery.value) {
+    return
+  }
+
+  await waitForIdleTime()
+  await loadRelatedProducts()
+})
+
 useSeoMeta({
   title: () => product.value ? `${product.value.title} - Avent` : 'Товар - Avent',
   description: () => product.value?.description || 'Описание товара Avent',
@@ -104,105 +142,130 @@ useSeoMeta({
 <template>
   <div v-if="product" class="py-12 lg:py-20">
     <div class="container mx-auto px-4">
-      <div class="grid lg:grid-cols-2 gap-12 lg:gap-20">
-        <!-- Image Gallery -->
+      <div class="grid gap-12 lg:grid-cols-2 lg:gap-20">
         <div class="flex flex-col gap-6">
-          <div class="aspect-square bg-white/5 rounded-3xl overflow-hidden glass-panel border-white/5 p-4 flex items-center justify-center">
+          <div class="glass-panel flex aspect-square items-center justify-center overflow-hidden rounded-3xl border-white/5 bg-white/5 p-4">
             <NuxtImg
               :src="galleryImages[activeImage] || fallbackImage"
               :alt="product.title"
-              class="max-w-full max-h-full object-contain transition-all duration-500 hover:scale-105"
+              width="900"
+              height="900"
+              sizes="(min-width: 1024px) 46vw, 92vw"
+              class="max-h-full max-w-full object-contain transition-all duration-500 hover:scale-105"
+              loading="eager"
+              fetchpriority="high"
             />
           </div>
           <div class="grid grid-cols-4 gap-4">
             <button
               v-for="(img, index) in galleryImages"
               :key="index"
-              @click="activeImage = index"
-              class="aspect-square rounded-xl overflow-hidden border transition-all flex items-center justify-center bg-[#0f0f1a]"
+              class="flex aspect-square items-center justify-center overflow-hidden rounded-xl border bg-[#0f0f1a] transition-all"
               :class="activeImage === index
                 ? 'border-primary'
                 : 'border-white/10 opacity-50 hover:opacity-100'"
+              @click="activeImage = index"
             >
               <NuxtImg
                 :src="img"
                 :alt="product.title"
-                class="max-w-[80%] max-h-[80%] object-contain"
+                width="200"
+                height="200"
+                sizes="(min-width: 1024px) 10vw, 20vw"
+                class="max-h-[80%] max-w-[80%] object-contain"
+                :loading="index === 0 ? 'eager' : 'lazy'"
+                :fetchpriority="index === 0 ? 'high' : 'low'"
               />
             </button>
           </div>
         </div>
 
-        <!-- Product Info -->
         <div class="flex flex-col gap-8">
           <div class="flex flex-col gap-2">
-            <div class="text-xs font-bold text-white/40 uppercase tracking-widest">{{ product.category }}</div>
-            <h1 class="text-4xl lg:text-5xl font-heading font-bold">{{ product.title }}</h1>
-            <div class="flex items-center gap-4 mt-2">
-              <span class="text-secondary font-bold text-3xl">${{ product.price }}</span>
+            <div class="text-xs font-bold uppercase tracking-widest text-white/40">{{ product.category }}</div>
+            <h1 class="text-4xl font-heading font-bold lg:text-5xl">{{ product.title }}</h1>
+            <div class="mt-2 flex items-center gap-4">
+              <span class="text-3xl font-bold text-secondary">${{ product.price }}</span>
               <span class="text-sm text-white/40">{{ product.availabilityStatus || 'Под заказ' }}</span>
             </div>
           </div>
 
           <div class="flex flex-col gap-4">
-            <h3 class="text-lg font-heading font-semibold text-white/90">Описание</h3>
-            <p class="text-white/60 leading-relaxed">{{ product.description }}</p>
+            <h2 class="text-lg font-heading font-semibold text-white/90">Описание</h2>
+            <p class="leading-relaxed text-white/60">{{ product.description }}</p>
           </div>
 
-          <div class="grid grid-cols-2 gap-6 p-6 bg-surface-container-low/30 rounded-2xl border border-white/5">
+          <div class="grid grid-cols-2 gap-6 rounded-2xl border border-white/5 bg-surface-container-low/30 p-6">
             <div class="flex flex-col gap-1">
-              <span class="text-xs text-white/40 uppercase tracking-tighter">Бренд</span>
+              <span class="text-xs uppercase tracking-tighter text-white/40">Бренд</span>
               <span class="text-sm font-medium">{{ product.brand || 'Avent' }}</span>
             </div>
             <div class="flex flex-col gap-1">
-              <span class="text-xs text-white/40 uppercase tracking-tighter">Гарантия</span>
+              <span class="text-xs uppercase tracking-tighter text-white/40">Гарантия</span>
               <span class="text-sm font-medium">{{ product.warrantyInformation || 'По запросу' }}</span>
             </div>
             <div class="flex flex-col gap-1">
-              <span class="text-xs text-white/40 uppercase tracking-tighter">Доставка</span>
+              <span class="text-xs uppercase tracking-tighter text-white/40">Доставка</span>
               <span class="text-sm font-medium">{{ product.shippingInformation || 'Уточняется' }}</span>
             </div>
             <div class="flex flex-col gap-1">
-              <span class="text-xs text-white/40 uppercase tracking-tighter">Наличие</span>
-              <span class="text-sm font-medium" :class="product.availabilityStatus === 'В наличии' ? 'text-green-400' : 'text-orange-400'">
+              <span class="text-xs uppercase tracking-tighter text-white/40">Наличие</span>
+              <span
+                class="text-sm font-medium"
+                :class="product.availabilityStatus === 'В наличии' ? 'text-green-400' : 'text-orange-400'"
+              >
                 {{ product.availabilityStatus || 'Под заказ' }}
               </span>
             </div>
           </div>
 
-          <div class="flex flex-col sm:flex-row gap-4 mt-4">
+          <div class="mt-4 flex flex-col gap-4 sm:flex-row">
             <AppButton variant="primary" class="flex-grow py-4 text-lg">В корзину</AppButton>
             <AppButton variant="glass" class="px-10">Купить в один клик</AppButton>
           </div>
         </div>
       </div>
 
-      <!-- Related Products -->
-      <div class="mt-32">
-        <h2 class="text-3xl font-heading font-bold mb-12">Похожие товары</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <section class="mt-32" aria-labelledby="related-products-title">
+        <h2 id="related-products-title" class="mb-12 text-3xl font-heading font-bold">Похожие товары</h2>
+        <div
+          v-if="relatedProducts.length"
+          class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4"
+        >
           <AppCard
             v-for="item in relatedProducts"
             :key="item._id"
             variant="medium"
-            class="flex flex-col h-full group"
+            class="flex h-full flex-col group"
           >
-            <div class="aspect-square mb-6 overflow-hidden rounded-xl bg-white/5 p-4 flex items-center justify-center">
-              <NuxtImg :src="item.images?.[0] || fallbackImage" :alt="item.title" class="max-w-full max-h-full object-contain group-hover:scale-105 transition-all duration-500" />
+            <div class="mb-6 flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-white/5 p-4">
+              <NuxtImg
+                :src="item.images?.[0] || fallbackImage"
+                :alt="item.title"
+                width="600"
+                height="600"
+                sizes="(min-width: 1280px) 22vw, (min-width: 640px) 44vw, 92vw"
+                class="max-h-full max-w-full object-contain transition-all duration-500 group-hover:scale-105"
+                loading="lazy"
+                fetchpriority="low"
+              />
             </div>
-            <div class="flex-grow flex flex-col gap-2">
-              <h3 class="font-heading font-bold line-clamp-1 group-hover:text-primary transition-colors">{{ item.title }}</h3>
-              <span class="text-secondary font-bold">${{ item.price }}</span>
+            <div class="flex flex-grow flex-col gap-2">
+              <h3 class="line-clamp-1 font-heading font-bold transition-colors group-hover:text-primary">{{ item.title }}</h3>
+              <span class="font-bold text-secondary">${{ item.price }}</span>
             </div>
             <template #footer>
-              <AppButton variant="primary" :to="`/products/${item.slug}`" class="w-full text-xs py-2">Подробнее</AppButton>
+              <AppButton variant="primary" :to="`/products/${item.slug}`" class="w-full py-2 text-xs">Подробнее</AppButton>
             </template>
           </AppCard>
         </div>
-        <p v-if="!relatedProducts.length" class="text-white/40 text-sm">
+        <p v-else-if="pendingRelatedProducts" class="text-sm text-white/40">
+          Подбираем похожие товары...
+        </p>
+        <p v-else class="text-sm text-white/40">
           Похожие товары пока не добавлены.
         </p>
-      </div>
+      </section>
     </div>
   </div>
 </template>

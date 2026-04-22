@@ -5,6 +5,16 @@ export default defineNuxtConfig({
   app: {
     baseURL: isProduction ? '/doc/' : '/',
   },
+  experimental: {
+    defaults: {
+      nuxtLink: {
+        prefetch: true,
+        prefetchOn: {
+          interaction: true,
+        },
+      },
+    },
+  },
   nitro: isProduction
     ? {
         preset: 'github-pages',
@@ -30,6 +40,42 @@ export default defineNuxtConfig({
           prerender: true,
           headers: {
             'cache-control': 'public, max-age=0, s-maxage=600, stale-while-revalidate=86400'
+          }
+        },
+        '/contacts': {
+          prerender: true,
+          headers: {
+            'cache-control': 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400'
+          }
+        },
+        '/services': {
+          prerender: true,
+          headers: {
+            'cache-control': 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400'
+          }
+        },
+        '/brands': {
+          prerender: true,
+          headers: {
+            'cache-control': 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400'
+          }
+        },
+        '/delivery': {
+          prerender: true,
+          headers: {
+            'cache-control': 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400'
+          }
+        },
+        '/privacy': {
+          prerender: true,
+          headers: {
+            'cache-control': 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400'
+          }
+        },
+        '/terms': {
+          prerender: true,
+          headers: {
+            'cache-control': 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400'
           }
         },
         '/products': {
@@ -73,7 +119,13 @@ export default defineNuxtConfig({
   },
 
   image: {
-    domains: ['res.cloudinary.com']
+    // GitHub Pages cannot run the on-demand image transformer, so we keep
+    // NuxtImg as a declarative wrapper and let origin/CDN caching serve files.
+    provider: 'none',
+    domains: [
+      'res.cloudinary.com',
+      'images.unsplash.com'
+    ]
   },
 
   runtimeConfig: {

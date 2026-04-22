@@ -11,9 +11,11 @@ interface Props {
 }
 const props = withDefaults(defineProps<Props>(), {
   variant: 'primary',
+  to: undefined,
   type: 'button',
   loading: false,
-  disabled: false
+  disabled: false,
+  ariaLabel: undefined
 })
 const classes = computed(() => [
   'inline-flex items-center justify-center font-medium transition-all focus:outline-none focus:ring-2 focus:ring-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed',
@@ -31,6 +33,7 @@ const classes = computed(() => [
     :to="to"
     :class="classes"
     :aria-label="ariaLabel"
+    prefetch-on="interaction"
   >
     <span v-if="loading" class="mr-2 animate-spin"/>
     <slot />

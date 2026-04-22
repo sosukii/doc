@@ -1,12 +1,23 @@
 <script setup lang="ts">
+import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalog } from '~/composables/useCatalog'
 
+const config = useRuntimeConfig()
 const route = useRoute()
 const startupWarmupStarted = useState('startup-warmup-started', () => false)
 const catalogViewportReady = useState('catalog-viewport-ready', () => false)
-const { buildCatalogCacheKey, getCachedProductsPage, fetchProductsPage, prefetchProductImages } = useCatalog()
+const warmedStaticRoutes = useState<Record<string, true>>('warmed-static-routes', () => ({}))
+const { getCachedProductsPageByFilters, prefetchCatalogPage } = useCatalog()
+const { enqueue, hasCompleted, remove } = useBackgroundPrefetchQueue()
 
 const staticRoutesToWarm = ['/contacts', '/services', '/brands', '/delivery', '/privacy', '/terms']
+const apiOrigin = (() => {
+  try {
+    return new URL(config.public.apiBase || 'https://doc-api-r2vu.onrender.com').origin
+  } catch {
+    return 'https://doc-api-r2vu.onrender.com'
+  }
+})()
 
 const normalizePath = (path: string) => {
   if (path !== '/' && path.endsWith('/')) {
@@ -23,23 +34,6 @@ const waitForInitialViewport = async () => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => resolve())
     })
-  })
-}
-
-const waitForIdleTime = async () => {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  if ('requestIdleCallback' in window) {
-    await new Promise<void>((resolve) => {
-      window.requestIdleCallback(() => resolve(), { timeout: 800 })
-    })
-    return
-  }
-
-  await new Promise((resolve) => {
-    window.setTimeout(resolve, 120)
   })
 }
 
@@ -64,8 +58,12 @@ const waitForCurrentCatalogPage = async () => {
 const preloadStaticRoute = async (path: string) => {
   try {
     await preloadRouteComponents(path)
-  } catch (error) {
-    console.error(`Failed to preload static route ${path}`, error)
+    warmedStaticRoutes.value = {
+      ...warmedStaticRoutes.value,
+      [path]: true
+    }
+  } catch {
+    // Route component prefetch is best-effort.
   }
 }
 
@@ -79,25 +77,44 @@ const warmStartupData = async () => {
   await waitForInitialViewport()
   await waitForCurrentCatalogPage()
 
-  const firstCatalogPageKey = buildCatalogCacheKey(1, '', '')
-
-  if (!getCachedProductsPage(firstCatalogPageKey)) {
-    await waitForIdleTime()
-    const firstCatalogPage = await fetchProductsPage(1, '', '')
-    await prefetchProductImages(firstCatalogPage, 4, 'low')
-  }
-
   const currentPath = normalizePath(route.path)
 
+  remove(/^startup:/)
+
+  if (currentPath !== '/products' && !getCachedProductsPageByFilters(1, '', '')) {
+    enqueue({
+      key: 'startup:catalog:page:1',
+      run: async () => {
+        await prefetchCatalogPage(1, '', '', {
+          imageCount: 8,
+          imagePriority: 'high'
+        })
+      }
+    })
+  }
+
   for (const staticRoute of staticRoutesToWarm) {
-    if (staticRoute === currentPath) {
+    if (staticRoute === currentPath || warmedStaticRoutes.value[staticRoute] || hasCompleted(`startup:route:${staticRoute}`)) {
       continue
     }
 
-    await waitForIdleTime()
-    await preloadStaticRoute(staticRoute)
+    enqueue({
+      key: `startup:route:${staticRoute}`,
+      run: () => preloadStaticRoute(staticRoute)
+    })
   }
 }
+
+useHead({
+  link: [
+    { rel: 'preconnect', href: apiOrigin, crossorigin: '' },
+    { rel: 'dns-prefetch', href: apiOrigin },
+    { rel: 'preconnect', href: 'https://images.unsplash.com', crossorigin: '' },
+    { rel: 'dns-prefetch', href: 'https://images.unsplash.com' },
+    { rel: 'preconnect', href: 'https://res.cloudinary.com', crossorigin: '' },
+    { rel: 'dns-prefetch', href: 'https://res.cloudinary.com' }
+  ]
+})
 
 onMounted(() => {
   void warmStartupData()

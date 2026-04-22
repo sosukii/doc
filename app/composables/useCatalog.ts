@@ -28,6 +28,7 @@ interface CachedProductsPage {
 const CATALOG_PER_PAGE = 12
 const CATALOG_CACHE_TTL_MS = 5 * 60 * 1000
 const CATALOG_SESSION_STORAGE_KEY = 'avent:catalog-cache:v1'
+const CATALOG_MAX_CACHE_ENTRIES = 12
 
 const defaultProductsResponse = (): ProductsResponse => ({
   items: [],
@@ -49,6 +50,11 @@ const buildCatalogCacheKey = (page: number, search: string, category: string) =>
   limit: CATALOG_PER_PAGE,
   search: search || '',
   category: category || ''
+})
+
+const normalizeCatalogFilters = (search = '', category = '') => ({
+  search: search.trim(),
+  category: category.trim()
 })
 
 export const useCatalog = () => {
@@ -129,7 +135,7 @@ export const useCatalog = () => {
   }
 
   const setCachedProductsPage = (cacheKey: string, response: ProductsResponse) => {
-    productsCache.value = {
+    const nextEntries = {
       ...productsCache.value,
       [cacheKey]: {
         response,
@@ -137,6 +143,12 @@ export const useCatalog = () => {
         expiresAt: Date.now() + CATALOG_CACHE_TTL_MS
       }
     }
+
+    const sortedEntries = Object.entries(nextEntries)
+      .sort(([, leftEntry], [, rightEntry]) => rightEntry.updatedAt - leftEntry.updatedAt)
+      .slice(0, CATALOG_MAX_CACHE_ENTRIES)
+
+    productsCache.value = Object.fromEntries(sortedEntries)
   }
 
   const getCachedCatalogResponses = () => {
@@ -179,18 +191,31 @@ export const useCatalog = () => {
       .map(product => product.images?.[0])
       .filter((image): image is string => Boolean(image))
 
-    for (const image of uniqueImages) {
-      await preloadImage(image, priority)
-    }
+    await Promise.all(uniqueImages.map(image => preloadImage(image, priority)))
   }
 
   hydrateCacheFromSession()
   startCachePersistence()
   pruneExpiredCacheEntries()
 
-  const fetchProductsPage = async (page: number, search = '', category = '', useCache = true) => {
-    const normalizedSearch = search.trim()
-    const cacheKey = buildCatalogCacheKey(page, normalizedSearch, category)
+  const getCachedProductsPageByFilters = (page: number, search = '', category = '') => {
+    const filters = normalizeCatalogFilters(search, category)
+    const cacheKey = buildCatalogCacheKey(page, filters.search, filters.category)
+    return getCachedProductsPage(cacheKey)
+  }
+
+  const fetchProductsPage = async (
+    page: number,
+    search = '',
+    category = '',
+    options: {
+      signal?: AbortSignal
+      useCache?: boolean
+    } = {}
+  ) => {
+    const filters = normalizeCatalogFilters(search, category)
+    const useCache = options.useCache ?? true
+    const cacheKey = buildCatalogCacheKey(page, filters.search, filters.category)
     const cachedResponse = getCachedProductsPage(cacheKey)
 
     if (useCache && cachedResponse) {
@@ -203,7 +228,8 @@ export const useCatalog = () => {
 
     const request = $fetch<ProductsResponse>('/api/products', {
       baseURL: apiBase,
-      query: buildProductsQuery(page, normalizedSearch, category)
+      query: buildProductsQuery(page, filters.search, filters.category),
+      signal: options.signal
     })
       .then((response) => {
         setCachedProductsPage(cacheKey, response)
@@ -211,7 +237,13 @@ export const useCatalog = () => {
       })
       .catch((error) => {
         console.error('API error', error)
-        return getCachedProductsPage(cacheKey) || defaultProductsResponse()
+        const staleResponse = getCachedProductsPage(cacheKey)
+
+        if (staleResponse) {
+          return staleResponse
+        }
+
+        throw error
       })
       .finally(() => {
         const { [cacheKey]: _completedRequest, ...restPendingRequests } = pendingRequests.value
@@ -226,6 +258,32 @@ export const useCatalog = () => {
     return request
   }
 
+  const prefetchCatalogPage = async (
+    page: number,
+    search = '',
+    category = '',
+    options: {
+      imageCount?: number
+      imagePriority?: 'high' | 'low'
+      useCache?: boolean
+      signal?: AbortSignal
+    } = {}
+  ) => {
+    const filters = normalizeCatalogFilters(search, category)
+    const response = await fetchProductsPage(page, filters.search, filters.category, {
+      useCache: options.useCache,
+      signal: options.signal
+    })
+
+    await prefetchProductImages(
+      response,
+      options.imageCount ?? 4,
+      options.imagePriority ?? 'low'
+    )
+
+    return response
+  }
+
   return {
     perPage: CATALOG_PER_PAGE,
     cacheTtlMs: CATALOG_CACHE_TTL_MS,
@@ -233,9 +291,12 @@ export const useCatalog = () => {
     pendingRequests,
     defaultProductsResponse,
     buildCatalogCacheKey,
+    normalizeCatalogFilters,
     getCachedProductsPage,
+    getCachedProductsPageByFilters,
     getCachedCatalogResponses,
     fetchProductsPage,
+    prefetchCatalogPage,
     prefetchProductImages
   }
 }

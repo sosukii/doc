@@ -17,8 +17,18 @@ describe('Main Navigation and User Scenarios', () => {
 
   it('can filter products by category', () => {
     cy.visit('/products')
-    cy.get('select').select(1)
-    cy.get('.grid').children().should('have.length.at.least', 1)
+    cy.contains('section[aria-labelledby="catalog-category-title"] label', 'Кондиционеры')
+      .as('conditionersFilter')
+
+    cy.get('@conditionersFilter')
+      .find('input[type="checkbox"]')
+      .check({ force: true })
+
+    cy.contains('span', 'Кондиционеры').should('exist')
+    cy.get('@conditionersFilter')
+      .find('input[type="checkbox"]')
+      .should('be.checked')
+    cy.get('main').find('a[href*="/products/"]').should('have.length.at.least', 1)
   })
 
   it('can open a product detail page', () => {

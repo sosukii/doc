@@ -19,17 +19,28 @@ useSeoMeta({
         </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <AppCard
+      <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <component
+          :is="brand.slug ? 'NuxtLink' : 'div'"
           v-for="brand in brands"
           :key="brand.id"
-          class="flex flex-col gap-6"
-          variant="low"
+          :to="brand.slug ? `/products?brand=${brand.slug}` : undefined"
+          class="block"
         >
-          <div class="text-5xl mb-4">{{ brand.logo }}</div>
-          <h3 class="text-2xl font-heading font-bold text-white/90">{{ brand.name }}</h3>
-          <p class="text-white/60 leading-relaxed flex-grow">{{ brand.description }}</p>
-        </AppCard>
+          <AppCard
+            class="flex h-full flex-col gap-6"
+            variant="low"
+          >
+            <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-3xl font-heading font-bold text-white/90">
+              {{ brand.logo }}
+            </div>
+            <h2 class="text-2xl font-heading font-bold text-white/90">{{ brand.name }}</h2>
+            <p class="flex-grow leading-relaxed text-white/60">{{ brand.description }}</p>
+            <p v-if="brand.slug" class="text-sm font-medium text-secondary">
+              Открыть товары бренда
+            </p>
+          </AppCard>
+        </component>
       </div>
 
       <!-- Trust Indicator -->

@@ -2,15 +2,17 @@ export const useBrands = () => {
   return [
     {
       id: 1,
-      name: 'Philips Hue',
-      description: 'Умное освещение для вашего дома с беспроводным управлением.',
-      logo: '💡'
+      slug: 'lessar',
+      name: 'Lessar',
+      description: 'климатическое оборудование для бытовых и коммерческих объектов.',
+      logo: 'L'
     },
     {
       id: 2,
-      name: 'Sonos',
-      description: 'Беспроводные аудиосистемы с великолепным звучанием.',
-      logo: '🔊'
+      slug: 'daikin',
+      name: 'Daikin',
+      description: 'японский бренд климатической техники с сильной репутацией в кондиционировании.',
+      logo: 'D'
     },
     {
       id: 3,

@@ -81,11 +81,11 @@ const warmStartupData = async () => {
 
   remove(/^startup:/)
 
-  if (currentPath !== '/products' && !getCachedProductsPageByFilters(1, '', '')) {
+  if (currentPath !== '/products' && !getCachedProductsPageByFilters(1, '', '', [])) {
     enqueue({
       key: 'startup:catalog:page:1',
       run: async () => {
-        await prefetchCatalogPage(1, '', '', {
+        await prefetchCatalogPage(1, '', '', [], {
           imageCount: 8,
           imagePriority: 'high'
         })

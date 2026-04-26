@@ -6,6 +6,7 @@ interface Product {
   price: number
   images: string[]
   category: string
+  brand?: string
   isPublished: boolean
   createdAt?: string
   updatedAt?: string
@@ -38,23 +39,26 @@ const defaultProductsResponse = (): ProductsResponse => ({
   totalPages: 1
 })
 
-const buildProductsQuery = (page: number, search: string, category: string) => ({
+const buildProductsQuery = (page: number, search: string, category: string, brands: string[]) => ({
   page,
   limit: CATALOG_PER_PAGE,
   search: search || undefined,
-  category: category || undefined
+  category: category || undefined,
+  brand: brands.length ? brands.join(',') : undefined
 })
 
-const buildCatalogCacheKey = (page: number, search: string, category: string) => JSON.stringify({
+const buildCatalogCacheKey = (page: number, search: string, category: string, brands: string[] = []) => JSON.stringify({
   page,
   limit: CATALOG_PER_PAGE,
   search: search || '',
-  category: category || ''
+  category: category || '',
+  brands: [...brands].sort()
 })
 
-const normalizeCatalogFilters = (search = '', category = '') => ({
+const normalizeCatalogFilters = (search = '', category = '', brands: string[] = []) => ({
   search: search.trim(),
-  category: category.trim()
+  category: category.trim(),
+  brands: [...new Set(brands.map(brand => brand.trim()).filter(Boolean))].sort()
 })
 
 export const useCatalog = () => {
@@ -198,9 +202,9 @@ export const useCatalog = () => {
   startCachePersistence()
   pruneExpiredCacheEntries()
 
-  const getCachedProductsPageByFilters = (page: number, search = '', category = '') => {
-    const filters = normalizeCatalogFilters(search, category)
-    const cacheKey = buildCatalogCacheKey(page, filters.search, filters.category)
+  const getCachedProductsPageByFilters = (page: number, search = '', category = '', brands: string[] = []) => {
+    const filters = normalizeCatalogFilters(search, category, brands)
+    const cacheKey = buildCatalogCacheKey(page, filters.search, filters.category, filters.brands)
     return getCachedProductsPage(cacheKey)
   }
 
@@ -208,14 +212,15 @@ export const useCatalog = () => {
     page: number,
     search = '',
     category = '',
+    brands: string[] = [],
     options: {
       signal?: AbortSignal
       useCache?: boolean
     } = {}
   ) => {
-    const filters = normalizeCatalogFilters(search, category)
+    const filters = normalizeCatalogFilters(search, category, brands)
     const useCache = options.useCache ?? true
-    const cacheKey = buildCatalogCacheKey(page, filters.search, filters.category)
+    const cacheKey = buildCatalogCacheKey(page, filters.search, filters.category, filters.brands)
     const cachedResponse = getCachedProductsPage(cacheKey)
 
     if (useCache && cachedResponse) {
@@ -228,7 +233,7 @@ export const useCatalog = () => {
 
     const request = $fetch<ProductsResponse>('/api/products', {
       baseURL: apiBase,
-      query: buildProductsQuery(page, filters.search, filters.category),
+      query: buildProductsQuery(page, filters.search, filters.category, filters.brands),
       signal: options.signal
     })
       .then((response) => {
@@ -262,6 +267,7 @@ export const useCatalog = () => {
     page: number,
     search = '',
     category = '',
+    brands: string[] = [],
     options: {
       imageCount?: number
       imagePriority?: 'high' | 'low'
@@ -269,8 +275,8 @@ export const useCatalog = () => {
       signal?: AbortSignal
     } = {}
   ) => {
-    const filters = normalizeCatalogFilters(search, category)
-    const response = await fetchProductsPage(page, filters.search, filters.category, {
+    const filters = normalizeCatalogFilters(search, category, brands)
+    const response = await fetchProductsPage(page, filters.search, filters.category, filters.brands, {
       useCache: options.useCache,
       signal: options.signal
     })

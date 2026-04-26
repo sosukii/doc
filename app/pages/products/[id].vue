@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import AppButton from '~/components/ui/AppButton.vue'
 import AppCard from '~/components/ui/AppCard.vue'
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
+import { useCatalogMetadata } from '~/composables/useCatalogMetadata'
 
 interface Product {
   _id: string
@@ -32,6 +33,7 @@ interface ProductsResponse {
 const route = useRoute()
 const config = useRuntimeConfig()
 const { waitForIdleTime } = useBackgroundPrefetchQueue()
+const { getBrandLabel, getCategoryLabel } = useCatalogMetadata()
 const productSlug = computed(() => String(route.params.id || ''))
 const apiBase = config.public.apiBase || 'https://doc-api-r2vu.onrender.com'
 const fallbackImage = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
@@ -182,7 +184,7 @@ useSeoMeta({
 
         <div class="flex flex-col gap-8">
           <div class="flex flex-col gap-2">
-            <div class="text-xs font-bold uppercase tracking-widest text-white/40">{{ product.category }}</div>
+            <div class="text-xs font-bold uppercase tracking-widest text-white/40">{{ getCategoryLabel(product.category) }}</div>
             <h1 class="text-4xl font-heading font-bold lg:text-5xl">{{ product.title }}</h1>
             <div class="mt-2 flex items-center gap-4">
               <span class="text-3xl font-bold text-secondary">${{ product.price }}</span>
@@ -198,7 +200,7 @@ useSeoMeta({
           <div class="grid grid-cols-2 gap-6 rounded-2xl border border-white/5 bg-surface-container-low/30 p-6">
             <div class="flex flex-col gap-1">
               <span class="text-xs uppercase tracking-tighter text-white/40">Бренд</span>
-              <span class="text-sm font-medium">{{ product.brand || 'Avent' }}</span>
+              <span class="text-sm font-medium">{{ product.brand ? getBrandLabel(product.brand) : 'Avent' }}</span>
             </div>
             <div class="flex flex-col gap-1">
               <span class="text-xs uppercase tracking-tighter text-white/40">Гарантия</span>

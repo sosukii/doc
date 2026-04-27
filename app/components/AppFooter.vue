@@ -1,3 +1,9 @@
+<script setup lang="ts">
+import { useCatalogNavigationWarmup } from '~/composables/useCatalogNavigationWarmup'
+
+const { warmCatalogListing } = useCatalogNavigationWarmup()
+</script>
+
 <template>
   <footer class="bg-surface-container-lowest py-12 lg:py-20 border-t border-white/5">
     <div class="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
@@ -13,7 +19,16 @@
       <div class="flex flex-col gap-6">
         <h3 class="text-lg font-heading font-semibold text-white/90">Навигация</h3>
         <nav class="flex flex-col gap-3">
-          <NuxtLink to="/products" prefetch-on="interaction" class="text-sm text-white/60 hover:text-secondary transition-colors">Каталог</NuxtLink>
+          <NuxtLink
+            to="/products"
+            prefetch-on="interaction"
+            class="text-sm text-white/60 hover:text-secondary transition-colors"
+            @pointerenter="warmCatalogListing"
+            @focus="warmCatalogListing"
+            @mousedown="warmCatalogListing"
+          >
+            Каталог
+          </NuxtLink>
           <NuxtLink to="/services" prefetch-on="interaction" class="text-sm text-white/60 hover:text-secondary transition-colors">Услуги</NuxtLink>
           <NuxtLink to="/brands" prefetch-on="interaction" class="text-sm text-white/60 hover:text-secondary transition-colors">Бренды</NuxtLink>
           <NuxtLink to="/delivery" prefetch-on="interaction" class="text-sm text-white/60 hover:text-secondary transition-colors">Доставка</NuxtLink>

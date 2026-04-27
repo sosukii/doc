@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useCatalogNavigationWarmup } from '~/composables/useCatalogNavigationWarmup'
 
 interface Props {
   variant?: 'primary' | 'glass' | 'text'
@@ -17,6 +18,9 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   ariaLabel: undefined
 })
+const { warmCatalogListing } = useCatalogNavigationWarmup()
+
+const shouldWarmCatalogListing = computed(() => props.to === '/products' || props.to?.startsWith('/products?'))
 const classes = computed(() => [
   'inline-flex items-center justify-center font-medium transition-all focus:outline-none focus:ring-2 focus:ring-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed',
   {
@@ -34,6 +38,9 @@ const classes = computed(() => [
     :class="classes"
     :aria-label="ariaLabel"
     prefetch-on="interaction"
+    @pointerenter="shouldWarmCatalogListing ? warmCatalogListing() : undefined"
+    @focus="shouldWarmCatalogListing ? warmCatalogListing() : undefined"
+    @mousedown="shouldWarmCatalogListing ? warmCatalogListing() : undefined"
   >
     <span v-if="loading" class="mr-2 animate-spin"/>
     <slot />

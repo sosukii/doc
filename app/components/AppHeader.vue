@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import AppButton from './ui/AppButton.vue'
+import { useCatalogNavigationWarmup } from '~/composables/useCatalogNavigationWarmup'
 
 const isMenuOpen = ref(false)
 const toggleMenu = () => isMenuOpen.value = !isMenuOpen.value
+const { warmCatalogListing } = useCatalogNavigationWarmup()
 
 const navLinks = [
   { name: 'Каталог', to: '/products' },
@@ -27,6 +29,9 @@ const navLinks = [
           :to="link.to"
           prefetch-on="interaction"
           class="text-sm font-medium text-white/70 hover:text-white transition-colors focus:outline-none focus:text-white"
+          @pointerenter="link.to === '/products' ? warmCatalogListing() : undefined"
+          @focus="link.to === '/products' ? warmCatalogListing() : undefined"
+          @mousedown="link.to === '/products' ? warmCatalogListing() : undefined"
         >
           {{ link.name }}
         </NuxtLink>
@@ -61,6 +66,9 @@ const navLinks = [
             :to="link.to"
             prefetch-on="interaction"
             class="text-lg font-medium text-white/70 py-2 border-b border-white/5"
+            @pointerenter="link.to === '/products' ? warmCatalogListing() : undefined"
+            @focus="link.to === '/products' ? warmCatalogListing() : undefined"
+            @mousedown="link.to === '/products' ? warmCatalogListing() : undefined"
             @click="isMenuOpen = false"
           >
             {{ link.name }}

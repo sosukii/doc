@@ -53,6 +53,7 @@ const firstRenderSettled = ref(false)
 const lastResolvedData = ref(defaultProductsResponse())
 const isRouteFetching = ref(false)
 const filtersHydrated = ref(false)
+const routeFetchReady = ref(false)
 
 let searchDebounceTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -182,7 +183,6 @@ const criticalImageLinks = computed(() => products.value
     as: 'image',
     href,
     fetchpriority: 'high',
-    // crossorigin: ''
   })))
 
 useHead(() => ({
@@ -195,7 +195,6 @@ const categories = computed(() =>
       slug: category.slug,
       label: getCategoryLabel(category.slug)
     }))
-    .sort((left, right) => left.label.localeCompare(right.label))
 )
 
 const allVisibleImagesReady = computed(() => {
@@ -388,14 +387,13 @@ const handlePageChange = (page: number) => {
 
 watch(
   () => route.fullPath,
-  () => {
-    if (import.meta.server) {
+  (nextPath, previousPath) => {
+    if (import.meta.server || !routeFetchReady.value || nextPath === previousPath) {
       return
     }
 
     void fetchRoutePage()
-  },
-  { immediate: true }
+  }
 )
 
 watch(
@@ -456,12 +454,18 @@ watch(error, (currentError) => {
 })
 
 onMounted(() => {
+  routeFetchReady.value = true
+
   requestAnimationFrame(() => {
     firstRenderSettled.value = true
   })
 
   if (!products.value.length) {
-    void recoverCatalogDataOnClient()
+    void fetchRoutePage().finally(() => {
+      if (!products.value.length) {
+        void recoverCatalogDataOnClient()
+      }
+    })
   }
 })
 

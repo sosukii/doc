@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import AppButton from '~/components/ui/AppButton.vue'
 import AppCard from '~/components/ui/AppCard.vue'
-import AppInput from '~/components/ui/AppInput.vue'
 import AppPagination from '~/components/ui/AppPagination.vue'
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalog } from '~/composables/useCatalog'
@@ -51,9 +50,16 @@ const catalogLoadError = ref('')
 const clientRecoveryAttempted = ref(false)
 const firstRenderSettled = ref(false)
 const lastResolvedData = ref(defaultProductsResponse())
+const displayedData = ref(defaultProductsResponse())
 const isRouteFetching = ref(false)
 const filtersHydrated = ref(false)
 const routeFetchReady = ref(false)
+const isFilterDrawerOpen = ref(false)
+const shouldShowSkeleton = ref(false)
+const filtersDrawerId = 'catalog-filters-drawer'
+const filterDrawerTitleId = 'catalog-filters-title'
+
+let activeRouteFetchId = 0
 
 let searchDebounceTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -63,8 +69,11 @@ const parseQueryList = (value: string | string[] | undefined, normalizer: (value
 }
 
 const updateFiltersFromRoute = () => {
+  const routeSearch = typeof route.query.search === 'string' ? route.query.search : ''
   selectedBrandSlugs.value = parseQueryList(route.query.brand, normalizeBrandSlug)
   selectedCategorySlugs.value = parseQueryList(route.query.category, normalizeCategorySlug)
+  searchQuery.value = routeSearch
+  debouncedSearchQuery.value = routeSearch
   filtersHydrated.value = true
 }
 
@@ -102,17 +111,78 @@ onBeforeUnmount(() => {
 })
 
 watch(
-  () => [route.query.brand, route.query.category],
+  () => [route.query.brand, route.query.category, route.query.search],
   () => {
     updateFiltersFromRoute()
   }
 )
+
+const getTargetCachedResponse = () => getCachedProductsPageByFilters(
+  currentPage.value,
+  normalizedFilters.value.search,
+  normalizedFilters.value.category,
+  normalizedFilters.value.brands
+)
+
+const applyTargetCachedResponse = () => {
+  const cachedResponse = getTargetCachedResponse()
+
+  if (!cachedResponse) {
+    return false
+  }
+
+  data.value = cachedResponse
+  displayedData.value = cachedResponse
+  lastResolvedData.value = cachedResponse
+  shouldShowSkeleton.value = false
+  isRouteFetching.value = false
+  catalogLoadError.value = ''
+  return true
+}
+
+const closeFilterDrawer = () => {
+  isFilterDrawerOpen.value = false
+}
+
+const openFilterDrawer = () => {
+  isFilterDrawerOpen.value = true
+}
+
+watch(isFilterDrawerOpen, (isOpen) => {
+  if (import.meta.server) {
+    return
+  }
+
+  document.body.style.overflow = isOpen ? 'hidden' : ''
+})
+
+const handleEscapeKey = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && isFilterDrawerOpen.value) {
+    closeFilterDrawer()
+  }
+}
 
 watch(requestKey, () => {
   catalogViewportReady.value = false
   catalogLoadError.value = ''
   clientRecoveryAttempted.value = false
   remove(/^catalog:(neighbor|current-page-images):/)
+
+  if (import.meta.server) {
+    return
+  }
+
+  if (applyTargetCachedResponse()) {
+    return
+  }
+
+  shouldShowSkeleton.value = true
+  displayedData.value = {
+    ...defaultProductsResponse(),
+    page: currentPage.value,
+    limit: perPage,
+    totalPages: lastResolvedData.value.totalPages || 1
+  }
 })
 
 const initialAsyncDataKey = computed(() => `catalog:${requestKey.value}`)
@@ -149,22 +219,19 @@ const { data, pending, error } = await useAsyncData(
 watch(
   data,
   (nextData) => {
-    if (!nextData || (!nextData.items.length && !nextData.total)) {
+    if (!nextData) {
       return
     }
 
-    lastResolvedData.value = nextData
+    displayedData.value = nextData
+    shouldShowSkeleton.value = false
+
+    if (nextData.items.length || !nextData.total) {
+      lastResolvedData.value = nextData
+    }
   },
   { immediate: true }
 )
-
-const displayedData = computed(() => {
-  if ((pending.value || isRouteFetching.value) && lastResolvedData.value.items.length) {
-    return lastResolvedData.value
-  }
-
-  return data.value ?? lastResolvedData.value
-})
 
 const products = computed(() => displayedData.value.items ?? [])
 const totalPages = computed(() => displayedData.value.totalPages || 1)
@@ -207,6 +274,7 @@ const allVisibleImagesReady = computed(() => {
 
 const currentPageFullyReady = computed(() => !pending.value && !isRouteFetching.value && allVisibleImagesReady.value)
 const canStartBackgroundPrefetch = computed(() => !pending.value && !isRouteFetching.value && firstRenderSettled.value && Boolean(products.value.length))
+const isCatalogLoading = computed(() => pending.value || isRouteFetching.value || shouldShowSkeleton.value)
 
 const markProductImageLoaded = (imageSrc: string) => {
   if (!imageSrc || loadedProductImages.value[imageSrc]) {
@@ -284,7 +352,9 @@ const recoverCatalogDataOnClient = async () => {
     )
 
     data.value = freshResponse
+    displayedData.value = freshResponse
     lastResolvedData.value = freshResponse
+    shouldShowSkeleton.value = false
     catalogLoadError.value = freshResponse.items.length ? '' : 'Не удалось получить товары из API. Проверь доступность бэкенда.'
   } catch {
     catalogLoadError.value = 'Не удалось получить товары из API. Проверь доступность бэкенда.'
@@ -296,23 +366,41 @@ const fetchRoutePage = async () => {
     return
   }
 
+  const requestId = ++activeRouteFetchId
+  const page = currentPage.value
+  const { search, category, brands } = normalizedFilters.value
+
   isRouteFetching.value = true
 
   try {
     const response = await fetchProductsPage(
-      currentPage.value,
-      normalizedFilters.value.search,
-      normalizedFilters.value.category,
-      normalizedFilters.value.brands
+      page,
+      search,
+      category,
+      brands
     )
 
+    if (requestId !== activeRouteFetchId) {
+      return
+    }
+
     data.value = response
+    displayedData.value = response
     lastResolvedData.value = response
+    shouldShowSkeleton.value = false
     catalogLoadError.value = ''
   } catch {
+    if (requestId !== activeRouteFetchId) {
+      return
+    }
+
+    shouldShowSkeleton.value = false
+    displayedData.value = lastResolvedData.value
     catalogLoadError.value = 'Не удалось получить товары из API. Проверь доступность бэкенда.'
   } finally {
-    isRouteFetching.value = false
+    if (requestId === activeRouteFetchId) {
+      isRouteFetching.value = false
+    }
   }
 }
 
@@ -337,7 +425,7 @@ const enqueueNeighborPrefetch = (page: number) => {
         normalizedFilters.value.category,
         normalizedFilters.value.brands,
         {
-          imageCount: fullPageImageCount,
+          imageCount: viewportImageCount,
           imagePriority: 'low'
         }
       )
@@ -389,6 +477,12 @@ watch(
   () => route.fullPath,
   (nextPath, previousPath) => {
     if (import.meta.server || !routeFetchReady.value || nextPath === previousPath) {
+      return
+    }
+
+    closeFilterDrawer()
+
+    if (applyTargetCachedResponse()) {
       return
     }
 
@@ -455,6 +549,7 @@ watch(error, (currentError) => {
 
 onMounted(() => {
   routeFetchReady.value = true
+  window.addEventListener('keydown', handleEscapeKey)
 
   requestAnimationFrame(() => {
     firstRenderSettled.value = true
@@ -466,6 +561,13 @@ onMounted(() => {
         void recoverCatalogDataOnClient()
       }
     })
+  }
+})
+
+onBeforeUnmount(() => {
+  if (import.meta.client) {
+    document.body.style.overflow = ''
+    window.removeEventListener('keydown', handleEscapeKey)
   }
 })
 
@@ -484,71 +586,38 @@ useSeoMeta({
       </div>
 
       <div class="grid gap-10 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside class="space-y-6">
+        <aside class="hidden space-y-6 lg:block">
           <AppCard variant="low" class="sticky top-28">
-            <div class="space-y-6">
-              <div class="flex items-center justify-between">
-                <h2 class="text-lg font-heading font-bold">Фильтры</h2>
-                <button
-                  v-if="hasActiveFilters"
-                  type="button"
-                  class="text-sm text-secondary transition hover:text-white"
-                  @click="clearFilters"
-                >
-                  Сбросить
-                </button>
-              </div>
-
-              <section aria-labelledby="catalog-search-title" class="space-y-3">
-                <h3 id="catalog-search-title" class="text-sm font-semibold uppercase tracking-widest text-white/50">Поиск</h3>
-                <AppInput
-                  v-model="searchQuery"
-                  placeholder="Поиск товаров..."
-                  type="search"
-                />
-              </section>
-
-              <section aria-labelledby="catalog-brand-title" class="space-y-3">
-                <h3 id="catalog-brand-title" class="text-sm font-semibold uppercase tracking-widest text-white/50">Бренд</h3>
-                <label
-                  v-for="brand in catalogBrands"
-                  :key="brand.slug"
-                  class="flex cursor-pointer items-start gap-3 rounded-xl border border-white/5 bg-white/5 px-3 py-3 transition hover:border-white/15"
-                >
-                  <input
-                    :checked="selectedBrandSlugs.includes(brand.slug)"
-                    type="checkbox"
-                    class="mt-1 h-4 w-4 rounded border-white/20 bg-transparent text-secondary focus:ring-secondary"
-                    @change="toggleBrand(brand.slug)"
-                  >
-                  <span class="flex flex-col">
-                    <span class="font-medium text-white/90">{{ brand.name }}</span>
-                    <span class="text-sm text-white/45">{{ brand.shortDescription }}</span>
-                  </span>
-                </label>
-              </section>
-
-              <section aria-labelledby="catalog-category-title" class="space-y-3">
-                <h3 id="catalog-category-title" class="text-sm font-semibold uppercase tracking-widest text-white/50">Категория</h3>
-                <label
-                  v-for="category in categories"
-                  :key="category.slug"
-                  class="flex cursor-pointer items-start gap-3 rounded-xl border border-white/5 bg-white/5 px-3 py-3 transition hover:border-white/15"
-                >
-                  <input
-                    :checked="selectedCategorySlugs.includes(category.slug)"
-                    type="checkbox"
-                    class="mt-1 h-4 w-4 rounded border-white/20 bg-transparent text-secondary focus:ring-secondary"
-                    @change="toggleCategory(category.slug)"
-                  >
-                  <span class="text-sm text-white/80">{{ category.label }}</span>
-                </label>
-              </section>
-            </div>
+            <CatalogFiltersPanel
+              :search-query="searchQuery"
+              :selected-brand-slugs="selectedBrandSlugs"
+              :selected-category-slugs="selectedCategorySlugs"
+              :catalog-brands="catalogBrands"
+              :categories="categories"
+              :has-active-filters="hasActiveFilters"
+              @update:search-query="searchQuery = $event"
+              @toggle-brand="toggleBrand"
+              @toggle-category="toggleCategory"
+              @clear-filters="clearFilters"
+            />
           </AppCard>
         </aside>
 
         <div class="space-y-8">
+          <div class="lg:hidden">
+            <AppButton
+              variant="glass"
+              class="w-full justify-between rounded-2xl px-5 py-4 text-left"
+              aria-label="Открыть фильтры"
+              :aria-expanded="isFilterDrawerOpen"
+              :aria-controls="filtersDrawerId"
+              @click="openFilterDrawer"
+            >
+              <span>Фильтры</span>
+              <span class="text-sm text-white/55">{{ hasActiveFilters ? 'Есть выбранные параметры' : 'Бренд, категория, поиск' }}</span>
+            </AppButton>
+          </div>
+
           <AppCard
             v-if="activeBrand"
             variant="low"
@@ -585,7 +654,7 @@ useSeoMeta({
           <div
             v-if="products.length"
             class="grid grid-cols-1 gap-8 transition-opacity duration-200 sm:grid-cols-2 xl:grid-cols-3"
-            :class="(pending || isRouteFetching) ? 'opacity-85' : 'opacity-100'"
+            :class="isRouteFetching ? 'opacity-90' : 'opacity-100'"
           >
             <AppCard
               v-for="(product, index) in products"
@@ -593,9 +662,9 @@ useSeoMeta({
               class="flex h-full flex-col group"
               variant="medium"
             >
-              <div class="relative mb-6 flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-white/5 p-4">
+              <div class="relative mb-6 flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-white/6 bg-white/[0.04] p-4">
                 <div
-                  class="absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent transition-opacity duration-300"
+                  class="absolute inset-0 rounded-xl bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.14),_transparent_58%),linear-gradient(135deg,rgba(255,255,255,0.09),rgba(255,255,255,0.03))] transition-opacity duration-300"
                   :class="loadedProductImages[resolveProductImage(product.images?.[0])] ? 'opacity-0' : 'opacity-100 animate-pulse'"
                   aria-hidden="true"
                 />
@@ -643,11 +712,10 @@ useSeoMeta({
             @change="handlePageChange"
           />
 
-          <div v-if="(pending || isRouteFetching) && !lastResolvedData.items.length" class="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-3">
-            <div
+          <div v-if="isCatalogLoading && !products.length" class="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-3">
+            <CatalogProductCardSkeleton
               v-for="placeholderIndex in perPage"
               :key="`placeholder-${placeholderIndex}`"
-              class="glass-panel h-[430px] animate-pulse rounded-2xl border border-white/5 bg-white/5"
             />
           </div>
 
@@ -670,5 +738,68 @@ useSeoMeta({
         </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="isFilterDrawerOpen"
+          class="fixed inset-0 z-40 bg-slate-950/65 backdrop-blur-sm lg:hidden"
+          aria-hidden="true"
+          @click="closeFilterDrawer"
+        />
+      </transition>
+
+      <transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="translate-y-full opacity-0"
+        enter-to-class="translate-y-0 opacity-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="translate-y-0 opacity-100"
+        leave-to-class="translate-y-full opacity-0"
+      >
+        <div
+          v-if="isFilterDrawerOpen"
+          :id="filtersDrawerId"
+          class="fixed inset-x-0 bottom-0 z-50 max-h-[86vh] overflow-hidden rounded-t-[32px] border border-white/10 bg-[#08111f]/98 shadow-[0_-24px_80px_rgba(0,0,0,0.45)] lg:hidden"
+          role="dialog"
+          aria-modal="true"
+          :aria-labelledby="filterDrawerTitleId"
+        >
+          <div class="mx-auto mt-3 h-1.5 w-14 rounded-full bg-white/20" aria-hidden="true" />
+          <div class="flex items-center justify-between border-b border-white/8 px-5 py-4">
+            <h2 :id="filterDrawerTitleId" class="text-xl font-heading font-bold">Фильтры</h2>
+            <button
+              type="button"
+              class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/75 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-secondary/40"
+              aria-label="Закрыть фильтры"
+              @click="closeFilterDrawer"
+            >
+              ×
+            </button>
+          </div>
+          <div class="max-h-[calc(86vh-88px)] overflow-y-auto px-5 py-5">
+            <CatalogFiltersPanel
+              :search-query="searchQuery"
+              :selected-brand-slugs="selectedBrandSlugs"
+              :selected-category-slugs="selectedCategorySlugs"
+              :catalog-brands="catalogBrands"
+              :categories="categories"
+              :has-active-filters="hasActiveFilters"
+              @update:search-query="searchQuery = $event"
+              @toggle-brand="toggleBrand"
+              @toggle-category="toggleCategory"
+              @clear-filters="clearFilters"
+            />
+          </div>
+        </div>
+      </transition>
+    </Teleport>
   </div>
 </template>

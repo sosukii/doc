@@ -1,3 +1,5 @@
+import { optimizeProductCardImageUrl } from '~/utils/cloudinaryImages'
+
 interface Product {
   _id: string
   title: string
@@ -60,6 +62,21 @@ const normalizeCatalogFilters = (search = '', category = '', brands: string[] = 
   category: category.trim(),
   brands: [...new Set(brands.map(brand => brand.trim()).filter(Boolean))].sort()
 })
+
+const runWithConcurrency = async <T>(items: T[], concurrency: number, task: (item: T) => Promise<void>) => {
+  const queue = [...items]
+  const workerCount = Math.max(1, Math.min(concurrency, queue.length))
+
+  await Promise.all(Array.from({ length: workerCount }, async () => {
+    while (queue.length) {
+      const item = queue.shift()
+
+      if (item) {
+        await task(item)
+      }
+    }
+  }))
+}
 
 export const useCatalog = () => {
   const config = useRuntimeConfig()
@@ -185,22 +202,46 @@ export const useCatalog = () => {
     })
   }
 
-  const prefetchProductImages = async (response: ProductsResponse, maxImages = 4, priority: 'high' | 'low' = 'low') => {
+  const prefetchProductImages = async (
+    response: ProductsResponse,
+    maxImages = 4,
+    priority: 'high' | 'low' = 'low',
+    concurrency = 2
+  ) => {
     if (import.meta.server) {
       return
     }
 
     const uniqueImages = response.items
       .slice(0, maxImages)
-      .map(product => product.images?.[0])
+      .map(product => product.images?.[0] ? optimizeProductCardImageUrl(product.images[0]) : '')
       .filter((image): image is string => Boolean(image))
 
-    await Promise.all(uniqueImages.map(image => preloadImage(image, priority)))
+    await runWithConcurrency([...new Set(uniqueImages)], concurrency, image => preloadImage(image, priority))
   }
 
-  hydrateCacheFromSession()
-  startCachePersistence()
-  pruneExpiredCacheEntries()
+  const scheduleProductImagesPrefetch = (
+    response: ProductsResponse,
+    maxImages = 4,
+    priority: 'high' | 'low' = 'low',
+    concurrency = 2
+  ) => {
+    if (import.meta.server) {
+      return
+    }
+
+    void prefetchProductImages(response, maxImages, priority, concurrency)
+  }
+
+  if (import.meta.client) {
+    onMounted(() => {
+      hydrateCacheFromSession()
+      startCachePersistence()
+      pruneExpiredCacheEntries()
+    })
+  } else {
+    pruneExpiredCacheEntries()
+  }
 
   const getCachedProductsPageByFilters = (page: number, search = '', category = '', brands: string[] = []) => {
     const filters = normalizeCatalogFilters(search, category, brands)
@@ -271,6 +312,7 @@ export const useCatalog = () => {
     options: {
       imageCount?: number
       imagePriority?: 'high' | 'low'
+      imageConcurrency?: number
       useCache?: boolean
       signal?: AbortSignal
     } = {}
@@ -281,10 +323,11 @@ export const useCatalog = () => {
       signal: options.signal
     })
 
-    await prefetchProductImages(
+    scheduleProductImagesPrefetch(
       response,
       options.imageCount ?? 4,
-      options.imagePriority ?? 'low'
+      options.imagePriority ?? 'low',
+      options.imageConcurrency ?? 2
     )
 
     return response
@@ -303,7 +346,8 @@ export const useCatalog = () => {
     getCachedCatalogResponses,
     fetchProductsPage,
     prefetchCatalogPage,
-    prefetchProductImages
+    prefetchProductImages,
+    scheduleProductImagesPrefetch
   }
 }
 

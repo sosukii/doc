@@ -5,6 +5,7 @@ import AppPagination from '~/components/ui/AppPagination.vue'
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalog } from '~/composables/useCatalog'
 import { useCatalogMetadata } from '~/composables/useCatalogMetadata'
+import { optimizeProductCardImageUrl } from '~/utils/cloudinaryImages'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,8 +15,7 @@ const {
   defaultProductsResponse,
   buildCatalogCacheKey,
   fetchProductsPage,
-  prefetchCatalogPage,
-  prefetchProductImages
+  prefetchCatalogPage
 } = useCatalog()
 const {
   catalogBrands,
@@ -26,10 +26,10 @@ const {
   getCategoryLabel,
   findBrandByValue
 } = useCatalogMetadata()
-const { enqueue, remove } = useBackgroundPrefetchQueue()
+const { enqueue, remove, waitForIdleTime } = useBackgroundPrefetchQueue()
 
-const viewportImageCount = 8
-const fullPageImageCount = perPage
+const backgroundImagePrefetchCount = 4
+const priorityImageCount = ref(2)
 const fallbackImage = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
   <svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
     <rect width="600" height="600" fill="#111827"/>
@@ -93,6 +93,14 @@ const requestKey = computed(() => buildCatalogCacheKey(
   normalizedFilters.value.category,
   normalizedFilters.value.brands
 ))
+
+const updatePriorityImageCount = () => {
+  if (import.meta.server) {
+    return
+  }
+
+  priorityImageCount.value = window.matchMedia('(min-width: 1024px)').matches ? 4 : 2
+}
 
 watch(searchQuery, (value) => {
   if (searchDebounceTimeout) {
@@ -166,7 +174,7 @@ watch(requestKey, () => {
   catalogViewportReady.value = false
   catalogLoadError.value = ''
   clientRecoveryAttempted.value = false
-  remove(/^catalog:(neighbor|current-page-images):/)
+  remove(/^catalog:neighbor:/)
 
   if (import.meta.server) {
     return
@@ -235,14 +243,13 @@ watch(
 
 const products = computed(() => displayedData.value.items ?? [])
 const totalPages = computed(() => displayedData.value.totalPages || 1)
-const visibleProducts = computed(() => products.value.slice(0, viewportImageCount))
 const activeBrand = computed(() => selectedBrandSlugs.value.length === 1 ? findBrandByValue(selectedBrandSlugs.value[0]) : null)
 const hasActiveFilters = computed(() => Boolean(selectedBrandSlugs.value.length || selectedCategorySlugs.value.length))
 
-const resolveProductImage = (image?: string) => image || fallbackImage
+const resolveProductImage = (image?: string) => image ? optimizeProductCardImageUrl(image) : fallbackImage
 
 const criticalImageLinks = computed(() => products.value
-  .slice(0, viewportImageCount)
+  .slice(0, priorityImageCount.value)
   .map((product) => resolveProductImage(product.images?.[0]))
   .filter(Boolean)
   .map((href) => ({
@@ -264,15 +271,7 @@ const categories = computed(() =>
     }))
 )
 
-const allVisibleImagesReady = computed(() => {
-  if (!visibleProducts.value.length) {
-    return true
-  }
-
-  return visibleProducts.value.every((product) => loadedProductImages.value[resolveProductImage(product.images?.[0])])
-})
-
-const currentPageFullyReady = computed(() => !pending.value && !isRouteFetching.value && allVisibleImagesReady.value)
+const currentPageFullyReady = computed(() => !pending.value && !isRouteFetching.value)
 const canStartBackgroundPrefetch = computed(() => !pending.value && !isRouteFetching.value && firstRenderSettled.value && Boolean(products.value.length))
 const isCatalogLoading = computed(() => pending.value || isRouteFetching.value || shouldShowSkeleton.value)
 
@@ -425,8 +424,9 @@ const enqueueNeighborPrefetch = (page: number) => {
         normalizedFilters.value.category,
         normalizedFilters.value.brands,
         {
-          imageCount: viewportImageCount,
-          imagePriority: 'low'
+          imageCount: backgroundImagePrefetchCount,
+          imagePriority: 'low',
+          imageConcurrency: 2
         }
       )
     }
@@ -439,13 +439,6 @@ const scheduleNeighborPrefetch = () => {
   }
 
   lastBackgroundPrefetchKey.value = requestKey.value
-
-  enqueue({
-    key: `catalog:current-page-images:${requestKey.value}`,
-    run: async () => {
-      await prefetchProductImages(displayedData.value, fullPageImageCount, 'low')
-    }
-  })
 
   enqueueNeighborPrefetch(currentPage.value + 1)
 
@@ -491,28 +484,6 @@ watch(
 )
 
 watch(
-  products,
-  async (currentProducts) => {
-    if (!currentProducts.length) {
-      return
-    }
-
-    await prefetchProductImages(
-      {
-        items: currentProducts,
-        total: displayedData.value.total ?? currentProducts.length,
-        page: currentPage.value,
-        limit: displayedData.value.limit ?? currentProducts.length,
-        totalPages: totalPages.value
-      },
-      viewportImageCount,
-      'high'
-    )
-  },
-  { immediate: true }
-)
-
-watch(
   canStartBackgroundPrefetch,
   (isReady) => {
     if (!isReady) {
@@ -550,10 +521,17 @@ watch(error, (currentError) => {
 onMounted(() => {
   routeFetchReady.value = true
   window.addEventListener('keydown', handleEscapeKey)
+  updatePriorityImageCount()
 
-  requestAnimationFrame(() => {
-    firstRenderSettled.value = true
-  })
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    void waitForIdleTime().then(() => {
+      firstRenderSettled.value = true
+    })
+  }))
+
+  if (applyTargetCachedResponse()) {
+    return
+  }
 
   if (!products.value.length) {
     void fetchRoutePage().finally(() => {
@@ -674,10 +652,10 @@ useSeoMeta({
                   width="600"
                   height="600"
                   sizes="(min-width: 1280px) 28vw, (min-width: 640px) 44vw, 92vw"
-                  class="max-h-full max-w-full object-contain transition-all duration-500 group-hover:scale-105"
-                  :class="loadedProductImages[resolveProductImage(product.images?.[0])] ? 'opacity-100 blur-0' : 'opacity-0 blur-sm'"
-                  :loading="index < viewportImageCount ? 'eager' : 'lazy'"
-                  :fetchpriority="index < viewportImageCount ? 'high' : 'low'"
+                  decoding="async"
+                  class="max-h-full max-w-full object-contain opacity-100 transition-transform duration-500 group-hover:scale-105"
+                  :loading="index < priorityImageCount ? 'eager' : 'lazy'"
+                  :fetchpriority="index < priorityImageCount ? 'high' : 'low'"
                   @load="markProductImageLoaded(resolveProductImage(product.images?.[0]))"
                   @error="markProductImageLoaded(resolveProductImage(product.images?.[0]))"
                 />

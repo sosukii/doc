@@ -4,6 +4,7 @@ import AppButton from '~/components/ui/AppButton.vue'
 import AppCard from '~/components/ui/AppCard.vue'
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalogMetadata } from '~/composables/useCatalogMetadata'
+import { optimizeProductCardImageUrl, optimizeProductDetailImageUrl } from '~/utils/cloudinaryImages'
 
 interface Product {
   _id: string
@@ -100,8 +101,18 @@ const galleryImages = computed(() => {
     return [fallbackImage]
   }
 
-  return product.value.images
+  return product.value.images.map(optimizeProductDetailImageUrl)
 })
+
+const galleryThumbnailImages = computed(() => {
+  if (!product.value?.images?.length) {
+    return [fallbackImage]
+  }
+
+  return product.value.images.map(optimizeProductCardImageUrl)
+})
+
+const relatedProductImage = (image?: string) => image ? optimizeProductCardImageUrl(image) : fallbackImage
 
 const activeImage = ref(0)
 
@@ -169,7 +180,7 @@ useSeoMeta({
               @click="activeImage = index"
             >
               <NuxtImg
-                :src="img"
+                :src="galleryThumbnailImages[index] || fallbackImage"
                 :alt="product.title"
                 width="200"
                 height="200"
@@ -242,7 +253,7 @@ useSeoMeta({
           >
             <div class="mb-6 flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-white/5 p-4">
               <NuxtImg
-                :src="item.images?.[0] || fallbackImage"
+                :src="relatedProductImage(item.images?.[0])"
                 :alt="item.title"
                 width="600"
                 height="600"

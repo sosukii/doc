@@ -1,7 +1,7 @@
 import { useCatalog } from '~/composables/useCatalog'
 
 export const useCatalogNavigationWarmup = () => {
-  const { getCachedProductsPageByFilters, prefetchCatalogPage } = useCatalog()
+  const { fetchProductsPage, getCachedProductsPageByFilters } = useCatalog()
   const warmupStarted = useState('catalog-navigation-warmup-started', () => false)
 
   const warmCatalogListing = () => {
@@ -11,12 +11,13 @@ export const useCatalogNavigationWarmup = () => {
 
     warmupStarted.value = true
 
-    void prefetchCatalogPage(1, '', '', [], {
-      imageCount: 8,
-      imagePriority: 'high'
-    }).finally(() => {
-      warmupStarted.value = false
-    })
+    void fetchProductsPage(1, '', '', [])
+      .catch(() => {
+        // Navigation warmup is best-effort.
+      })
+      .finally(() => {
+        warmupStarted.value = false
+      })
   }
 
   return {

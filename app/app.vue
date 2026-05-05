@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalog } from '~/composables/useCatalog'
+import { CLOUDINARY_ORIGIN } from '~/constants/cloudinary'
 
 const config = useRuntimeConfig()
 const route = useRoute()
 const startupWarmupStarted = useState('startup-warmup-started', () => false)
 const catalogViewportReady = useState('catalog-viewport-ready', () => false)
 const warmedStaticRoutes = useState<Record<string, true>>('warmed-static-routes', () => ({}))
-const { getCachedProductsPageByFilters, prefetchCatalogPage } = useCatalog()
+const { fetchProductsPage, getCachedProductsPageByFilters } = useCatalog()
 const { enqueue, hasCompleted, remove } = useBackgroundPrefetchQueue()
 
 const staticRoutesToWarm = ['/contacts', '/services', '/brands', '/delivery', '/privacy', '/terms']
@@ -67,12 +68,25 @@ const preloadStaticRoute = async (path: string) => {
   }
 }
 
+const warmCatalogListingData = () => {
+  const currentPath = normalizePath(route.path)
+
+  if (currentPath === '/products' || getCachedProductsPageByFilters(1, '', '', [])) {
+    return
+  }
+
+  void fetchProductsPage(1, '', '', []).catch(() => {
+    // Startup catalog warmup is best-effort.
+  })
+}
+
 const warmStartupData = async () => {
   if (startupWarmupStarted.value || import.meta.server) {
     return
   }
 
   startupWarmupStarted.value = true
+  warmCatalogListingData()
 
   await waitForInitialViewport()
   await waitForCurrentCatalogPage()
@@ -80,18 +94,6 @@ const warmStartupData = async () => {
   const currentPath = normalizePath(route.path)
 
   remove(/^startup:/)
-
-  if (currentPath !== '/products' && !getCachedProductsPageByFilters(1, '', '', [])) {
-    enqueue({
-      key: 'startup:catalog:page:1',
-      run: async () => {
-        await prefetchCatalogPage(1, '', '', [], {
-          imageCount: 8,
-          imagePriority: 'high'
-        })
-      }
-    })
-  }
 
   for (const staticRoute of staticRoutesToWarm) {
     if (staticRoute === currentPath || warmedStaticRoutes.value[staticRoute] || hasCompleted(`startup:route:${staticRoute}`)) {
@@ -111,8 +113,8 @@ useHead({
     { rel: 'dns-prefetch', href: apiOrigin },
     { rel: 'preconnect', href: 'https://images.unsplash.com', crossorigin: '' },
     { rel: 'dns-prefetch', href: 'https://images.unsplash.com' },
-    { rel: 'preconnect', href: 'https://res.cloudinary.com', crossorigin: '' },
-    { rel: 'dns-prefetch', href: 'https://res.cloudinary.com' }
+    { rel: 'preconnect', href: CLOUDINARY_ORIGIN, crossorigin: '' },
+    { rel: 'dns-prefetch', href: CLOUDINARY_ORIGIN }
   ]
 })
 

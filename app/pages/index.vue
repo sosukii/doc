@@ -55,10 +55,10 @@ useSeoMeta({
     <section class="relative flex min-h-[90vh] items-center overflow-hidden">
       <div class="container mx-auto z-10 grid items-center gap-12 px-4 lg:grid-cols-2">
         <div class="animate-fade-in flex max-w-2xl flex-col gap-8">
-          <h1 class="text-5xl font-heading font-bold leading-tight lg:text-7xl">
+          <h1 class="text-4xl font-heading font-bold leading-tight lg:text-7xl" style="font-size: clamp(2rem, 8vw, 4rem);">
             Будущее <span class="gradient-text">Атмосферы</span> уже здесь
           </h1>
-          <p class="text-xl leading-relaxed text-white/60">
+          <p class="text-lg leading-relaxed text-white/60 sm:text-xl">
             Мы создаем пространства, где технологии незаметны, а ощущения - незабываемы. Прецизионная точность в каждой детали.
           </p>
           <div class="mt-4 flex flex-wrap gap-4">

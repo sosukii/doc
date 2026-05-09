@@ -5,10 +5,27 @@
 @layer base {
   body {
     @apply bg-background text-white font-body antialiased;
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
+  }
+
+  img,
+  picture,
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  img {
+    object-fit: cover;
+  }
+
+  * {
+    overflow-wrap: anywhere;
+    word-break: normal;
   }
 }
 
@@ -45,9 +62,7 @@
   .input-field {
     @apply bg-surface-container-lowest border-none rounded-lg px-4 py-2 transition-all focus:ring-2 focus:ring-secondary/50;
   }
-}
 
-@layer utilities {
   .animate-gradient-flow {
     background: linear-gradient(-45deg, #150330, #2a0660, #1e0445, #0a0218);
     background-size: 400% 400%;

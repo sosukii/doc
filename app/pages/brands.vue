@@ -13,13 +13,13 @@ useSeoMeta({
   <div class="py-12 lg:py-20">
     <div class="container mx-auto px-4">
       <div class="max-w-3xl mb-16">
-        <h1 class="text-4xl lg:text-6xl font-heading font-bold mb-6">Бренды</h1>
+        <h1 class="text-3xl lg:text-6xl font-heading font-bold mb-6" style="font-size: clamp(1.875rem, 8vw, 3.75rem);">Бренды</h1>
         <p class="text-xl text-white/60 leading-relaxed">
           Компания Avent сотрудничает с лидерами рынка интеллектуальных систем для обеспечения максимальной надежности и комфорта наших клиентов.
         </p>
       </div>
 
-      <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 min-w-0">
         <component
           :is="brand.slug ? 'NuxtLink' : 'div'"
           v-for="brand in brands"

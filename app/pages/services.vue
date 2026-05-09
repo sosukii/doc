@@ -14,20 +14,20 @@ useSeoMeta({
   <div class="py-12 lg:py-20">
     <div class="container mx-auto px-4">
       <div class="max-w-3xl mb-16">
-        <h1 class="text-4xl lg:text-6xl font-heading font-bold mb-6">Наши услуги</h1>
+        <h1 class="text-3xl lg:text-6xl font-heading font-bold mb-6" style="font-size: clamp(1.875rem, 8vw, 3.75rem);">Наши услуги</h1>
         <p class="text-xl text-white/60 leading-relaxed">
           Компания Avent предоставляет полный цикл работ по созданию атмосферных и технологичных пространств. От проектирования до сервисного обслуживания.
         </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 min-w-0">
         <AppCard
           v-for="service in services"
           :key="service.id"
           class="flex flex-col gap-6"
           variant="low"
         >
-          <div class="text-5xl mb-4">{{ service.icon }}</div>
+          <div class="text-4xl mb-4 sm:text-5xl" style="font-size: clamp(2rem, 10vw, 3rem);">{{ service.icon }}</div>
           <h3 class="text-2xl font-heading font-bold text-white/90">{{ service.title }}</h3>
           <p class="text-white/60 leading-relaxed flex-grow">{{ service.description }}</p>
           <template #footer>

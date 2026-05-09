@@ -559,11 +559,11 @@ useSeoMeta({
   <div class="py-12">
     <div class="container mx-auto px-4">
       <div class="mb-12">
-        <h1 class="mb-4 text-4xl font-heading font-bold lg:text-6xl">Каталог</h1>
+        <h1 class="mb-4 text-3xl font-heading font-bold lg:text-6xl" style="font-size: clamp(1.875rem, 8vw, 3.75rem);">Каталог</h1>
         <p class="text-white/60">Откройте для себя наш ассортимент прецизионных решений.</p>
       </div>
 
-      <div class="grid gap-10 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <div class="grid gap-10 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
         <aside class="hidden space-y-6 lg:block">
           <AppCard variant="low" class="sticky top-28">
             <CatalogFiltersPanel
@@ -631,7 +631,7 @@ useSeoMeta({
 
           <div
             v-if="products.length"
-            class="grid grid-cols-1 gap-8 transition-opacity duration-200 sm:grid-cols-2 xl:grid-cols-3"
+            class="grid grid-cols-1 gap-8 transition-opacity duration-200 sm:grid-cols-2 xl:grid-cols-3 min-w-0"
             :class="isRouteFetching ? 'opacity-90' : 'opacity-100'"
           >
             <AppCard
@@ -690,7 +690,7 @@ useSeoMeta({
             @change="handlePageChange"
           />
 
-          <div v-if="isCatalogLoading && !products.length" class="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-3">
+          <div v-if="isCatalogLoading && !products.length" class="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-3 min-w-0">
             <CatalogProductCardSkeleton
               v-for="placeholderIndex in perPage"
               :key="`placeholder-${placeholderIndex}`"

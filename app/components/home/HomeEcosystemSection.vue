@@ -23,11 +23,11 @@ defineProps<{
         </p>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 min-w-0">
         <AppCard
           v-for="(item, index) in items"
           :key="item.title"
-          class="group relative flex h-full min-h-[300px] flex-col justify-end overflow-hidden"
+          class="group relative flex h-full min-h-[250px] sm:min-h-[300px] flex-col justify-end overflow-hidden"
           :variant="index % 2 === 0 ? 'low' : 'medium'"
         >
           <NuxtImg

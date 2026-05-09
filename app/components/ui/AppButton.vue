@@ -21,13 +21,30 @@ const props = withDefaults(defineProps<Props>(), {
 const { warmCatalogListing } = useCatalogNavigationWarmup()
 
 const shouldWarmCatalogListing = computed(() => props.to === '/products' || props.to?.startsWith('/products?'))
-const classes = computed(() => [
-  'inline-flex items-center justify-center font-medium transition-all focus:outline-none focus:ring-2 focus:ring-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed',
-  {
-    'btn-primary': props.variant === 'primary',
-    'btn-glass': props.variant === 'glass',
-    'btn-text': props.variant === 'text'
-  }
+
+const classes = {
+  base: [
+    'inline-flex',
+    'items-center',
+    'justify-center',
+    'font-medium',
+    'transition-all',
+    'focus:outline-none',
+    'focus:ring-2',
+    'focus:ring-secondary/50',
+    'disabled:opacity-50',
+    'disabled:cursor-not-allowed',
+  ],
+  variants: {
+    primary: 'btn-primary',
+    glass: 'btn-glass',
+    text: 'btn-text',
+  },
+}
+
+const buttonClasses = computed(() => [
+  classes.base,
+  classes.variants[props.variant],
 ])
 </script>
 
@@ -35,7 +52,7 @@ const classes = computed(() => [
   <NuxtLink
     v-if="to"
     :to="to"
-    :class="classes"
+    :class="buttonClasses"
     :aria-label="ariaLabel"
     prefetch-on="interaction"
     @pointerenter="shouldWarmCatalogListing ? warmCatalogListing() : undefined"
@@ -50,7 +67,7 @@ const classes = computed(() => [
     v-else
     :type="type"
     :disabled="disabled || loading"
-    :class="classes"
+    :class="buttonClasses"
     :aria-label="ariaLabel"
   >
       <span v-if="loading" class="mr-2 animate-spin">

@@ -7,18 +7,28 @@ withDefaults(defineProps<Props>(), {
   variant: 'medium',
   hoverEffect: true
 })
+
+const classes = {
+  container: [
+    'glass-panel',
+    'p-6',
+    'sm:p-8',
+  ],
+  variants: {
+    low: 'bg-surface-container-low/40',
+    medium: 'bg-surface-container-medium/40',
+    high: 'bg-surface-container-high/40',
+  },
+  hoverEffect: 'transition-transform hover:-translate-y-1',
+}
 </script>
 
 <template>
   <div
     :class="[
-      'glass-panel p-6 sm:p-8',
-      {
-        'bg-surface-container-low/40': variant === 'low',
-        'bg-surface-container-medium/40': variant === 'medium',
-        'bg-surface-container-high/40': variant === 'high',
-        'transition-transform hover:-translate-y-1': hoverEffect
-      }
+      classes.container,
+      classes.variants[variant],
+      hoverEffect && classes.hoverEffect
     ]"
   >
     <div v-if="$slots.header" class="mb-4">

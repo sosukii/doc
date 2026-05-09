@@ -56,13 +56,41 @@ const goToPage = (page: number) => {
 
   emit('change', page)
 }
+
+const classes = {
+  nav: 'flex items-center justify-center gap-2',
+  navButton: [
+    'px-4',
+    'py-2',
+    'rounded-lg',
+    'bg-white/10',
+    'text-white/80',
+    'transition',
+    'disabled:opacity-30',
+    'disabled:cursor-not-allowed',
+    'hover:bg-white/15',
+  ],
+  pageButton: {
+    base: [
+      'min-w-10',
+      'h-10',
+      'px-3',
+      'rounded-lg',
+      'transition',
+    ],
+    active: 'bg-primary text-white',
+    inactive: 'bg-white/10 text-white/80 hover:bg-white/15',
+    ellipsis: 'bg-transparent text-white/40 cursor-default',
+  },
+}
+
 </script>
 
 <template>
-  <nav class="flex items-center justify-center gap-2" aria-label="Пагинация">
+  <nav :class="classes.nav" aria-label="Пагинация">
     <button
       type="button"
-      class="px-4 py-2 rounded-lg bg-white/10 text-white/80 transition disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/15"
+      :class="classes.navButton"
       :disabled="page === 1"
       @click="goToPage(page - 1)"
     >
@@ -73,12 +101,14 @@ const goToPage = (page: number) => {
       v-for="(item, index) in pages"
       :key="`page-${item}-${index}`"
       type="button"
-      class="min-w-10 h-10 px-3 rounded-lg transition"
-      :class="item === page
-        ? 'bg-primary text-white'
-        : item === '...'
-          ? 'bg-transparent text-white/40 cursor-default'
-          : 'bg-white/10 text-white/80 hover:bg-white/15'"
+      :class="[
+        classes.pageButton.base,
+        item === page
+          ? classes.pageButton.active
+          : item === '...'
+            ? classes.pageButton.ellipsis
+            : classes.pageButton.inactive
+      ]"
       :disabled="item === '...'"
       @click="typeof item === 'number' && goToPage(item)"
     >
@@ -87,7 +117,7 @@ const goToPage = (page: number) => {
 
     <button
       type="button"
-      class="px-4 py-2 rounded-lg bg-white/10 text-white/80 transition disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/15"
+      :class="classes.navButton"
       :disabled="page === totalPages"
       @click="goToPage(page + 1)"
     >

@@ -13,22 +13,94 @@ const navLinks = [
   { name: 'Доставка', to: '/delivery' },
   { name: 'Контакты', to: '/contacts' }
 ]
+
+const classes = {
+  header: [
+    'fixed',
+    'top-0',
+    'left-0',
+    'right-0',
+    'z-50',
+    'transition-all',
+    'bg-background/30',
+    'backdrop-blur-md',
+    'border-b',
+    'border-white/5',
+  ],
+  container: 'container mx-auto px-4 h-20 flex items-center justify-between',
+  logo: [
+    'flex',
+    'items-center',
+    'gap-2',
+    'group',
+    'focus:outline-none',
+  ],
+  logoText: [
+    'text-2xl',
+    'font-heading',
+    'font-bold',
+    'gradient-text',
+    'group-hover:scale-105',
+    'transition-transform',
+  ],
+  nav: 'hidden lg:flex items-center gap-8',
+  navLink: [
+    'text-sm',
+    'font-medium',
+    'text-white/70',
+    'hover:text-white',
+    'transition-colors',
+    'focus:outline-none',
+    'focus:text-white',
+  ],
+  desktopActions: 'hidden lg:flex items-center gap-6',
+  phone: 'text-sm font-medium hover:text-secondary transition-colors',
+  mobileMenu: [
+    'lg:hidden',
+    'text-white',
+    'p-2',
+    'focus:outline-none',
+  ],
+  mobileMenuPanel: [
+    'lg:hidden',
+    'absolute',
+    'top-20',
+    'left-0',
+    'right-0',
+    'bg-background/95',
+    'backdrop-blur-lg',
+    'border-b',
+    'border-white/10',
+    'p-4',
+  ],
+  mobileNav: 'flex flex-col gap-4 mb-6',
+  mobileNavLink: [
+    'text-lg',
+    'font-medium',
+    'text-white/70',
+    'py-2',
+    'border-b',
+    'border-white/5',
+  ],
+  mobileActions: 'flex flex-col gap-4',
+  mobilePhone: 'text-lg font-medium',
+}
 </script>
 
 <template>
-  <header class="fixed top-0 left-0 right-0 z-50 transition-all bg-background/30 backdrop-blur-md border-b border-white/5">
-    <div class="container mx-auto px-4 h-20 flex items-center justify-between">
-      <NuxtLink to="/" prefetch-on="interaction" class="flex items-center gap-2 group focus:outline-none">
-        <span class="text-2xl font-heading font-bold gradient-text group-hover:scale-105 transition-transform">AVENT</span>
+  <header :class="classes.header">
+    <div :class="classes.container">
+      <NuxtLink to="/" prefetch-on="interaction" :class="classes.logo">
+        <span :class="classes.logoText">AVENT</span>
       </NuxtLink>
 
-      <nav class="hidden lg:flex items-center gap-8">
+      <nav :class="classes.nav">
         <NuxtLink
           v-for="link in navLinks"
           :key="link.to"
           :to="link.to"
           prefetch-on="interaction"
-          class="text-sm font-medium text-white/70 hover:text-white transition-colors focus:outline-none focus:text-white"
+          :class="classes.navLink"
           @pointerenter="link.to === '/products' ? warmCatalogListing() : undefined"
           @focus="link.to === '/products' ? warmCatalogListing() : undefined"
           @mousedown="link.to === '/products' ? warmCatalogListing() : undefined"
@@ -37,13 +109,13 @@ const navLinks = [
         </NuxtLink>
       </nav>
 
-      <div class="hidden lg:flex items-center gap-6">
-        <a href="tel:+74950000000" class="text-sm font-medium hover:text-secondary transition-colors">+7 (495) 000-00-00</a>
+      <div :class="classes.desktopActions">
+        <a href="tel:+74950000000" :class="classes.phone">+7 (495) 000-00-00</a>
         <AppButton variant="primary">Заказать звонок</AppButton>
       </div>
 
       <button
-        class="lg:hidden text-white p-2 focus:outline-none"
+        :class="classes.mobileMenu"
         aria-label="Toggle navigation menu"
         @click="toggleMenu"
       >
@@ -58,14 +130,14 @@ const navLinks = [
 
     <!-- Mobile Menu -->
     <Transition name="fade">
-      <div v-if="isMenuOpen" class="lg:hidden absolute top-20 left-0 right-0 bg-background/95 backdrop-blur-lg border-b border-white/10 p-4">
-        <nav class="flex flex-col gap-4 mb-6">
+      <div v-if="isMenuOpen" :class="classes.mobileMenuPanel">
+        <nav :class="classes.mobileNav">
           <NuxtLink
             v-for="link in navLinks"
             :key="link.to"
             :to="link.to"
             prefetch-on="interaction"
-            class="text-lg font-medium text-white/70 py-2 border-b border-white/5"
+            :class="classes.mobileNavLink"
             @pointerenter="link.to === '/products' ? warmCatalogListing() : undefined"
             @focus="link.to === '/products' ? warmCatalogListing() : undefined"
             @mousedown="link.to === '/products' ? warmCatalogListing() : undefined"
@@ -74,8 +146,8 @@ const navLinks = [
             {{ link.name }}
           </NuxtLink>
         </nav>
-        <div class="flex flex-col gap-4">
-          <a href="tel:+74950000000" class="text-lg font-medium">+7 (495) 000-00-00</a>
+        <div :class="classes.mobileActions">
+          <a href="tel:+74950000000" :class="classes.mobilePhone">+7 (495) 000-00-00</a>
           <AppButton variant="primary">Заказать звонок</AppButton>
         </div>
       </div>

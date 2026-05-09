@@ -16,11 +16,18 @@ withDefaults(defineProps<Props>(), {
 })
 
 defineEmits(['update:modelValue'])
+
+const classes = {
+  wrapper: 'flex flex-col gap-2',
+  label: 'text-sm font-medium text-white/70',
+  input: 'input-field w-full text-white placeholder-white/40 focus:outline-none',
+  error: 'text-xs text-red-400',
+}
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
-    <label v-if="label" :for="name" class="text-sm font-medium text-white/70">{{ label }}</label>
+  <div :class="classes.wrapper">
+    <label v-if="label" :for="name" :class="classes.label">{{ label }}</label>
     <input
       :id="name"
       :name="name"
@@ -30,9 +37,9 @@ defineEmits(['update:modelValue'])
       :tabindex="tabindex"
       :aria-label="ariaLabel || label || placeholder"
       :aria-invalid="!!error"
-      class="input-field w-full text-white placeholder-white/40 focus:outline-none"
+      :class="classes.input"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     >
-    <span v-if="error" class="text-xs text-red-400">{{ error }}</span>
+    <span v-if="error" :class="classes.error">{{ error }}</span>
   </div>
 </template>

@@ -1,18 +1,46 @@
 <script setup lang="ts">
 import AppButton from '~/components/ui/AppButton.vue'
 import AppCard from '~/components/ui/AppCard.vue'
+
+const classes = {
+  section: 'container mx-auto px-4 py-24',
+  card: 'relative overflow-hidden py-16 text-center lg:py-24',
+  bgBlob: [
+    'absolute',
+    'right-0',
+    'top-0',
+    '-z-10',
+    'h-64',
+    'w-64',
+    'rounded-full',
+    'bg-secondary/10',
+    'blur-[100px]',
+  ],
+  content: [
+    'relative',
+    'z-10',
+    'mx-auto',
+    'flex',
+    'max-w-3xl',
+    'flex-col',
+    'gap-8',
+  ],
+  title: 'text-3xl font-heading font-bold lg:text-6xl',
+  subtitle: 'text-xl text-white/70',
+  actions: 'flex justify-center gap-4',
+}
 </script>
 
 <template>
-  <section class="container mx-auto px-4 py-24">
-    <AppCard variant="high" class="relative overflow-hidden py-16 text-center lg:py-24" role="region" aria-label="Форма обратной связи">
-      <div class="absolute right-0 top-0 -z-10 h-64 w-64 rounded-full bg-secondary/10 blur-[100px]" />
-      <div class="relative z-10 mx-auto flex max-w-3xl flex-col gap-8">
-        <h2 class="text-3xl font-heading font-bold lg:text-6xl" style="font-size: clamp(1.875rem, 7vw, 3.75rem);">Готовы изменить ваше пространство?</h2>
-        <p class="text-xl text-white/70">
+  <section :class="classes.section">
+    <AppCard :class="classes.card" variant="high" role="region" aria-label="Форма обратной связи">
+      <div :class="classes.bgBlob" />
+      <div :class="classes.content">
+        <h2 :class="classes.title" style="font-size: clamp(1.875rem, 7vw, 3.75rem);">Готовы изменить ваше пространство?</h2>
+        <p :class="classes.subtitle">
           Оставьте заявку на бесплатную консультацию и наш специалист свяжется с вами в течение 15 минут.
         </p>
-        <div class="flex justify-center gap-4">
+        <div :class="classes.actions">
           <AppButton variant="primary">Связаться с нами</AppButton>
         </div>
       </div>

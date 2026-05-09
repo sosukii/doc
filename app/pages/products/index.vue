@@ -63,8 +63,13 @@ let activeRouteFetchId = 0
 
 let searchDebounceTimeout: ReturnType<typeof setTimeout> | null = null
 
-const parseQueryList = (value: string | string[] | undefined, normalizer: (value: string) => string) => {
-  const values = Array.isArray(value) ? value : value ? value.split(',') : []
+const parseQueryList = (value: unknown, normalizer: (value: string) => string) => {
+  const values = Array.isArray(value)
+    ? value.map(String)
+    : value == null
+      ? []
+      : String(value).split(',')
+
   return [...new Set(values.map(normalizer).filter(Boolean))].sort()
 }
 
@@ -251,12 +256,12 @@ const resolveProductImage = (image?: string) => image ? optimizeProductCardImage
 const criticalImageLinks = computed(() => products.value
   .slice(0, priorityImageCount.value)
   .map((product) => resolveProductImage(product.images?.[0]))
-  .filter(Boolean)
+  .filter((href): href is string => Boolean(href))
   .map((href) => ({
-    rel: 'preload',
-    as: 'image',
+    rel: 'preload' as const,
+    as: 'image' as const,
     href,
-    fetchpriority: 'high',
+    fetchPriority: 'high' as const,
   })))
 
 useHead(() => ({
@@ -298,7 +303,10 @@ const updateCatalogQuery = async () => {
   }
 
   if (selectedCategorySlugs.value.length) {
-    nextQuery.category = selectedCategorySlugs.value[0]
+    const category = selectedCategorySlugs.value[0]
+    if (category) {
+      nextQuery.category = category
+    }
   }
 
   if (debouncedSearchQuery.value.trim()) {

@@ -22,24 +22,38 @@ const breadcrumbs = computed(() => {
 
   return crumbs
 })
+
+const classes = {
+  nav: 'py-4',
+  list: 'flex items-center gap-2 text-xs font-medium text-white/50',
+  item: 'flex items-center gap-2',
+  link: [
+    'hover:text-white',
+    'transition-colors',
+    'focus:outline-none',
+    'focus:text-white',
+  ],
+  currentPage: 'text-secondary font-bold',
+  separator: 'w-3 h-3 text-white/20',
+}
 </script>
 
 <template>
-  <nav aria-label="Breadcrumb" class="py-4">
-    <ol class="flex items-center gap-2 text-xs font-medium text-white/50">
-      <li v-for="(crumb, index) in breadcrumbs" :key="crumb.to" class="flex items-center gap-2">
+  <nav :aria-label="classes.nav">
+    <ol :class="classes.list">
+      <li v-for="(crumb, index) in breadcrumbs" :key="crumb.to" :class="classes.item">
         <NuxtLink
           v-if="index < breadcrumbs.length - 1"
           :to="crumb.to"
-          class="hover:text-white transition-colors focus:outline-none focus:text-white"
+          :class="classes.link"
         >
           {{ crumb.name }}
         </NuxtLink>
-        <span v-else class="text-secondary font-bold">{{ crumb.name }}</span>
+        <span v-else :class="classes.currentPage">{{ crumb.name }}</span>
         
         <svg
           v-if="index < breadcrumbs.length - 1"
-          class="w-3 h-3 text-white/20"
+          :class="classes.separator"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"

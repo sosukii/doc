@@ -73,7 +73,7 @@ onBeforeUnmount(() => {
   <div class="min-h-screen flex flex-col relative overflow-hidden bg-transparent">
     <AppHeader />
 
-    <main class="flex-grow pt-20">
+    <main :class="['flex-grow', $route.path !== '/' && 'pt-[7rem]']">
       <div class="container mx-auto px-4">
         <AppBreadcrumbs v-if="$route.path !== '/'" />
       </div>

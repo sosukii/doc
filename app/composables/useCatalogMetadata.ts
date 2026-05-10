@@ -1,5 +1,5 @@
 const catalogCategories = [
-  { slug: 'conditioners', label: 'Кондиционеры', count: 1243, icon: '❄️', aliases: ['conditioners', 'air-conditioners', 'air conditioners', 'кондиционеры'] },
+  { slug: 'air-conditioners', label: 'Кондиционеры', count: 1243, icon: '❄️', aliases: ['conditioners', 'air-conditioners', 'air conditioners', 'кондиционеры'] },
   { slug: 'ventilation', label: 'Вентиляция', count: 632, icon: '💨', aliases: ['ventilation', 'вентиляция'] },
   { slug: 'heaters', label: 'Нагреватели', count: 814, icon: '🔥', aliases: ['heaters', 'нагреватели'] },
   { slug: 'coolers', label: 'Охладители', count: 421, icon: '🧊', aliases: ['coolers', 'охладители'] },

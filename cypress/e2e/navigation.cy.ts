@@ -17,17 +17,15 @@ describe('Main Navigation and User Scenarios', () => {
 
   it('can filter products by category', () => {
     cy.visit('/products')
-    cy.contains('section[aria-labelledby="catalog-category-title"] label', 'Кондиционеры')
+    cy.get('section[aria-labelledby="catalog-category-title"]')
+      .find('button')
+      .contains('Кондиционеры')
       .as('conditionersFilter')
 
     cy.get('@conditionersFilter')
-      .find('input[type="checkbox"]')
-      .check({ force: true })
+      .click()
 
     cy.contains('span', 'Кондиционеры').should('exist')
-    cy.get('@conditionersFilter')
-      .find('input[type="checkbox"]')
-      .should('be.checked')
     cy.get('main').find('a[href*="/products/"]').should('have.length.at.least', 1)
   })
 

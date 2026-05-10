@@ -5,6 +5,7 @@ import AppPagination from '~/components/ui/AppPagination.vue'
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalog } from '~/composables/useCatalog'
 import { useCatalogMetadata } from '~/composables/useCatalogMetadata'
+import { formatPriceRub } from '~/utils/price'
 import { optimizeProductCardImageUrl } from '~/utils/cloudinaryImages'
 
 const route = useRoute()
@@ -43,6 +44,8 @@ const searchQuery = ref('')
 const debouncedSearchQuery = ref('')
 const selectedBrandSlugs = ref<string[]>([])
 const selectedCategorySlugs = ref<string[]>([])
+const priceFrom = ref(0)
+const priceTo = ref(1500000)
 const catalogViewportReady = useState('catalog-viewport-ready', () => false)
 const loadedProductImages = ref<Record<string, true>>({})
 const lastBackgroundPrefetchKey = ref('')
@@ -75,8 +78,13 @@ const parseQueryList = (value: unknown, normalizer: (value: string) => string) =
 
 const updateFiltersFromRoute = () => {
   const routeSearch = typeof route.query.search === 'string' ? route.query.search : ''
+  const parsedPriceFrom = typeof route.query.priceFrom === 'string' ? Number(route.query.priceFrom) || 0 : 0
+  const parsedPriceTo = typeof route.query.priceTo === 'string' ? Number(route.query.priceTo) || 1500000 : 1500000
+
   selectedBrandSlugs.value = parseQueryList(route.query.brand, normalizeBrandSlug)
   selectedCategorySlugs.value = parseQueryList(route.query.category, normalizeCategorySlug)
+  priceFrom.value = Math.max(0, Math.min(parsedPriceFrom, parsedPriceTo, 1500000))
+  priceTo.value = Math.max(priceFrom.value, Math.min(parsedPriceTo, 1500000))
   searchQuery.value = routeSearch
   debouncedSearchQuery.value = routeSearch
   filtersHydrated.value = true
@@ -89,14 +97,18 @@ const currentCategorySlug = computed(() => selectedCategorySlugs.value[0] || '')
 const normalizedFilters = computed(() => ({
   search: debouncedSearchQuery.value.trim(),
   category: currentCategorySlug.value,
-  brands: [...selectedBrandSlugs.value].sort()
+  brands: [...selectedBrandSlugs.value].sort(),
+  priceFrom: priceFrom.value,
+  priceTo: priceTo.value
 }))
 
 const requestKey = computed(() => buildCatalogCacheKey(
   currentPage.value,
   normalizedFilters.value.search,
   normalizedFilters.value.category,
-  normalizedFilters.value.brands
+  normalizedFilters.value.brands,
+  normalizedFilters.value.priceFrom,
+  normalizedFilters.value.priceTo
 ))
 
 const updatePriorityImageCount = () => {
@@ -124,7 +136,7 @@ onBeforeUnmount(() => {
 })
 
 watch(
-  () => [route.query.brand, route.query.category, route.query.search],
+  () => [route.query.brand, route.query.category, route.query.search, route.query.priceFrom, route.query.priceTo],
   () => {
     updateFiltersFromRoute()
   }
@@ -134,7 +146,9 @@ const getTargetCachedResponse = () => getCachedProductsPageByFilters(
   currentPage.value,
   normalizedFilters.value.search,
   normalizedFilters.value.category,
-  normalizedFilters.value.brands
+  normalizedFilters.value.brands,
+  normalizedFilters.value.priceFrom,
+  normalizedFilters.value.priceTo
 )
 
 const applyTargetCachedResponse = () => {
@@ -206,7 +220,9 @@ const { data, pending, error } = await useAsyncData(
     currentPage.value,
     normalizedFilters.value.search,
     normalizedFilters.value.category,
-    normalizedFilters.value.brands
+    normalizedFilters.value.brands,
+    normalizedFilters.value.priceFrom,
+    normalizedFilters.value.priceTo
   ),
   {
     server: true,
@@ -223,7 +239,9 @@ const { data, pending, error } = await useAsyncData(
           currentPage.value,
           normalizedFilters.value.search,
           normalizedFilters.value.category,
-          normalizedFilters.value.brands
+          normalizedFilters.value.brands,
+          normalizedFilters.value.priceFrom,
+          normalizedFilters.value.priceTo
         )
     }
   }
@@ -249,7 +267,13 @@ watch(
 const products = computed(() => displayedData.value.items ?? [])
 const totalPages = computed(() => displayedData.value.totalPages || 1)
 const activeBrand = computed(() => selectedBrandSlugs.value.length === 1 ? findBrandByValue(selectedBrandSlugs.value[0]) : null)
-const hasActiveFilters = computed(() => Boolean(selectedBrandSlugs.value.length || selectedCategorySlugs.value.length))
+const hasActiveFilters = computed(() => Boolean(
+  selectedBrandSlugs.value.length ||
+  selectedCategorySlugs.value.length ||
+  debouncedSearchQuery.value.trim() ||
+  priceFrom.value > 0 ||
+  priceTo.value < 1500000
+))
 
 const resolveProductImage = (image?: string) => image ? optimizeProductCardImageUrl(image) : fallbackImage
 
@@ -317,8 +341,34 @@ const updateCatalogQuery = async () => {
     nextQuery.search = debouncedSearchQuery.value.trim()
   }
 
+  if (priceFrom.value > 0) {
+    nextQuery.priceFrom = String(priceFrom.value)
+  }
+
+  if (priceTo.value < 1500000) {
+    nextQuery.priceTo = String(priceTo.value)
+  }
+
   await router.replace({ query: nextQuery })
 }
+
+watch([priceFrom, priceTo], () => {
+  if (!filtersHydrated.value) {
+    return
+  }
+
+  catalogLoadError.value = ''
+  void updateCatalogQuery()
+})
+
+watch(debouncedSearchQuery, () => {
+  if (!filtersHydrated.value) {
+    return
+  }
+
+  catalogLoadError.value = ''
+  void updateCatalogQuery()
+})
 
 const toggleBrand = (brandSlug: string) => {
   const nextBrands = selectedBrandSlugs.value.includes(brandSlug)
@@ -342,6 +392,10 @@ const toggleCategory = (categorySlug: string) => {
 const clearFilters = () => {
   selectedBrandSlugs.value = []
   selectedCategorySlugs.value = []
+  searchQuery.value = ''
+  debouncedSearchQuery.value = ''
+  priceFrom.value = 0
+  priceTo.value = 1500000
   catalogLoadError.value = ''
   void updateCatalogQuery()
 }
@@ -359,6 +413,8 @@ const recoverCatalogDataOnClient = async () => {
       normalizedFilters.value.search,
       normalizedFilters.value.category,
       normalizedFilters.value.brands,
+      normalizedFilters.value.priceFrom,
+      normalizedFilters.value.priceTo,
       { useCache: false }
     )
 
@@ -388,7 +444,9 @@ const fetchRoutePage = async () => {
       page,
       search,
       category,
-      brands
+      brands,
+      normalizedFilters.value.priceFrom,
+      normalizedFilters.value.priceTo
     )
 
     if (requestId !== activeRouteFetchId) {
@@ -424,7 +482,9 @@ const enqueueNeighborPrefetch = (page: number) => {
     page,
     normalizedFilters.value.search,
     normalizedFilters.value.category,
-    normalizedFilters.value.brands
+    normalizedFilters.value.brands,
+    normalizedFilters.value.priceFrom,
+    normalizedFilters.value.priceTo
   )
 
   enqueue({
@@ -435,6 +495,8 @@ const enqueueNeighborPrefetch = (page: number) => {
         normalizedFilters.value.search,
         normalizedFilters.value.category,
         normalizedFilters.value.brands,
+        normalizedFilters.value.priceFrom,
+        normalizedFilters.value.priceTo,
         {
           imageCount: backgroundImagePrefetchCount,
           imagePriority: 'low',
@@ -586,7 +648,11 @@ useSeoMeta({
             :categories="categories"
             :available-count="availableCount"
             :has-active-filters="hasActiveFilters"
+            :price-from="priceFrom"
+            :price-to="priceTo"
             @update:search-query="searchQuery = $event"
+            @update:price-from="priceFrom = $event"
+            @update:price-to="priceTo = $event"
             @toggle-brand="toggleBrand"
             @toggle-category="toggleCategory"
             @clear-filters="clearFilters"
@@ -672,7 +738,7 @@ useSeoMeta({
                   @error="markProductImageLoaded(resolveProductImage(product.images?.[0]))"
                 />
                 <div class="absolute right-4 top-4 glass-panel px-3 py-1 text-xs font-bold text-secondary">
-                  ${{ product.price }}
+                  {{ formatPriceRub(product.price) }}
                 </div>
               </div>
               <div class="flex flex-grow flex-col gap-2">
@@ -783,7 +849,11 @@ useSeoMeta({
               :categories="categories"
               :available-count="availableCount"
               :has-active-filters="hasActiveFilters"
+              :price-from="priceFrom"
+              :price-to="priceTo"
               @update:search-query="searchQuery = $event"
+              @update:price-from="priceFrom = $event"
+              @update:price-to="priceTo = $event"
               @toggle-brand="toggleBrand"
               @toggle-category="toggleCategory"
               @clear-filters="clearFilters"

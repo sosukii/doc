@@ -22,12 +22,25 @@ interface Props {
   categories: readonly CategoryOption[]
   availableCount?: number
   hasActiveFilters?: boolean
+  priceFrom?: number
+  priceTo?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   availableCount: 0,
-  hasActiveFilters: false
+  hasActiveFilters: false,
+  priceFrom: 0,
+  priceTo: 1500000
 })
+
+const emit = defineEmits<{
+  'update:searchQuery': [value: string]
+  'update:priceFrom': [value: number]
+  'update:priceTo': [value: number]
+  toggleBrand: [brandSlug: string]
+  toggleCategory: [categorySlug: string]
+  clearFilters: []
+}>()
 
 const {
   selectedBrandSlugs,
@@ -35,30 +48,56 @@ const {
   catalogBrands,
   categories,
   availableCount,
-  hasActiveFilters
+  hasActiveFilters,
+  priceFrom: propPriceFrom,
+  priceTo: propPriceTo
 } = toRefs(props)
 
-defineEmits<{
-  'update:searchQuery': [value: string]
-  toggleBrand: [brandSlug: string]
-  toggleCategory: [categorySlug: string]
-  clearFilters: []
-}>()
+const PRICE_MIN = 0
+const PRICE_MAX = 1500000
 
-const priceFrom = ref(0)
-const priceTo = ref(1500000)
+const clampPriceValue = (value: number) => {
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue)
+    ? Math.max(PRICE_MIN, Math.min(numericValue, PRICE_MAX))
+    : PRICE_MIN
+}
+
+const priceFromValue = computed({
+  get: () => propPriceFrom.value,
+  set: (value) => emit('update:priceFrom', clampPriceValue(value))
+})
+
+const priceToValue = computed({
+  get: () => propPriceTo.value,
+  set: (value) => emit('update:priceTo', clampPriceValue(value))
+})
 const isInStock = ref(true)
 const categoriesExpanded = ref(false)
 
-watch(priceFrom, (newValue) => {
-  if (newValue > priceTo.value) {
-    priceFrom.value = priceTo.value
+watch(priceFromValue, (newValue) => {
+  const clampedValue = clampPriceValue(newValue)
+
+  if (clampedValue !== newValue) {
+    priceFromValue.value = clampedValue
+    return
+  }
+
+  if (newValue > priceToValue.value) {
+    priceFromValue.value = priceToValue.value
   }
 })
 
-watch(priceTo, (newValue) => {
-  if (newValue < priceFrom.value) {
-    priceTo.value = priceFrom.value
+watch(priceToValue, (newValue) => {
+  const clampedValue = clampPriceValue(newValue)
+
+  if (clampedValue !== newValue) {
+    priceToValue.value = clampedValue
+    return
+  }
+
+  if (newValue < priceFromValue.value) {
+    priceToValue.value = priceFromValue.value
   }
 })
 
@@ -191,7 +230,7 @@ const classes = {
       <div :class="classes.priceSection">
         <div class="range-slider-container">
           <input
-            v-model.number="priceFrom"
+            v-model.number="priceFromValue"
             type="range"
             min="0"
             max="1500000"
@@ -200,7 +239,7 @@ const classes = {
             aria-label="Минимальная цена"
           >
           <input
-            v-model.number="priceTo"
+            v-model.number="priceToValue"
             type="range"
             min="0"
             max="1500000"
@@ -212,8 +251,8 @@ const classes = {
             <div
               class="range-fill"
               :style="{
-                left: (priceFrom / 1500000) * 100 + '%',
-                right: 100 - (priceTo / 1500000) * 100 + '%'
+                left: (priceFromValue / 1500000) * 100 + '%',
+                right: 100 - (priceToValue / 1500000) * 100 + '%'
               }"
             />
           </div>
@@ -223,7 +262,7 @@ const classes = {
           <div class="filter-panel-input-group">
             <span class="filter-panel-input-label">от</span>
             <input
-              v-model.number="priceFrom"
+              v-model.number="priceFromValue"
               type="number"
               class="filter-panel-price-input filter-panel-price-input-left"
               min="0"
@@ -233,7 +272,7 @@ const classes = {
           <div class="filter-panel-input-group filter-panel-dropdown-group">
             <span class="filter-panel-input-label">до</span>
             <input
-              v-model.number="priceTo"
+              v-model.number="priceToValue"
               type="number"
               class="filter-panel-price-input filter-panel-price-input-right"
               min="0"
@@ -247,7 +286,7 @@ const classes = {
                 :key="preset"
                 type="button"
                 class="filter-panel-dropdown-item"
-                @click="priceTo = preset"
+                @click="priceToValue = preset"
               >
                 {{ preset.toLocaleString('ru-RU') }}
               </button>

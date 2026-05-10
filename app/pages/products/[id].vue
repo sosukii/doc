@@ -4,6 +4,7 @@ import AppButton from '~/components/ui/AppButton.vue'
 import AppCard from '~/components/ui/AppCard.vue'
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalogMetadata } from '~/composables/useCatalogMetadata'
+import { formatPriceRub } from '~/utils/price'
 import { optimizeProductCardImageUrl, optimizeProductDetailImageUrl } from '~/utils/cloudinaryImages'
 
 interface Product {
@@ -198,7 +199,7 @@ useSeoMeta({
             <div class="text-xs font-bold uppercase tracking-widest text-white/40">{{ getCategoryLabel(product.category) }}</div>
             <h1 class="text-4xl font-heading font-bold lg:text-5xl">{{ product.title }}</h1>
             <div class="mt-2 flex items-center gap-4">
-              <span class="text-3xl font-bold text-secondary">${{ product.price }}</span>
+              <span class="text-3xl font-bold text-secondary">{{ formatPriceRub(product.price) }}</span>
               <span class="text-sm text-white/40">{{ product.availabilityStatus || 'Под заказ' }}</span>
             </div>
           </div>
@@ -265,7 +266,7 @@ useSeoMeta({
             </div>
             <div class="flex flex-grow flex-col gap-2">
               <h3 class="line-clamp-1 font-heading font-bold transition-colors group-hover:text-primary">{{ item.title }}</h3>
-              <span class="font-bold text-secondary">${{ item.price }}</span>
+              <span class="font-bold text-secondary">{{ formatPriceRub(item.price) }}</span>
             </div>
             <template #footer>
               <AppButton variant="primary" :to="`/products/${item.slug}`" class="w-full py-2 text-xs">Подробнее</AppButton>

@@ -685,7 +685,7 @@ useSeoMeta({
             </div>
           </AppCard>
 
-          <div class="flex flex-wrap items-center gap-3">
+          <div v-show="selectedBrandSlugs.length > 0" class="flex flex-wrap items-center gap-3">
             <span
               v-for="brandSlug in selectedBrandSlugs"
               :key="brandSlug"

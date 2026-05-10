@@ -272,9 +272,13 @@ const categories = computed(() =>
   catalogCategories
     .map((category) => ({
       slug: category.slug,
-      label: getCategoryLabel(category.slug)
+      label: getCategoryLabel(category.slug),
+      count: category.count,
+      icon: category.icon
     }))
 )
+
+const availableCount = computed(() => displayedData.value.total || 0)
 
 const currentPageFullyReady = computed(() => !pending.value && !isRouteFetching.value)
 const canStartBackgroundPrefetch = computed(() => !pending.value && !isRouteFetching.value && firstRenderSettled.value && Boolean(products.value.length))
@@ -573,20 +577,20 @@ useSeoMeta({
 
       <div class="grid gap-10 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
         <aside class="hidden space-y-6 lg:block">
-          <AppCard variant="low" class="sticky top-28">
-            <CatalogFiltersPanel
-              :search-query="searchQuery"
-              :selected-brand-slugs="selectedBrandSlugs"
-              :selected-category-slugs="selectedCategorySlugs"
-              :catalog-brands="catalogBrands"
-              :categories="categories"
-              :has-active-filters="hasActiveFilters"
-              @update:search-query="searchQuery = $event"
-              @toggle-brand="toggleBrand"
-              @toggle-category="toggleCategory"
-              @clear-filters="clearFilters"
-            />
-          </AppCard>
+          <CatalogFiltersPanel
+            class="sticky top-28"
+            :search-query="searchQuery"
+            :selected-brand-slugs="selectedBrandSlugs"
+            :selected-category-slugs="selectedCategorySlugs"
+            :catalog-brands="catalogBrands"
+            :categories="categories"
+            :available-count="availableCount"
+            :has-active-filters="hasActiveFilters"
+            @update:search-query="searchQuery = $event"
+            @toggle-brand="toggleBrand"
+            @toggle-category="toggleCategory"
+            @clear-filters="clearFilters"
+          />
         </aside>
 
         <div class="space-y-8">
@@ -777,6 +781,7 @@ useSeoMeta({
               :selected-category-slugs="selectedCategorySlugs"
               :catalog-brands="catalogBrands"
               :categories="categories"
+              :available-count="availableCount"
               :has-active-filters="hasActiveFilters"
               @update:search-query="searchQuery = $event"
               @toggle-brand="toggleBrand"

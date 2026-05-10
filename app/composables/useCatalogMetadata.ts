@@ -1,13 +1,13 @@
 const catalogCategories = [
-  { slug: 'conditioners', label: 'Кондиционеры', aliases: ['conditioners', 'air-conditioners', 'air conditioners', 'кондиционеры'] },
-  { slug: 'ventilation', label: 'Вентиляция', aliases: ['ventilation', 'вентиляция'] },
-  { slug: 'heaters', label: 'Нагреватели', aliases: ['heaters', 'нагреватели'] },
-  { slug: 'coolers', label: 'Охладители', aliases: ['coolers', 'охладители'] },
-  { slug: 'heat-pumps', label: 'Тепловые насосы', aliases: ['heat-pumps', 'heat pumps', 'тепловые насосы'] },
-  { slug: 'humidifiers', label: 'Увлажнители', aliases: ['humidifiers', 'увлажнители'] },
-  { slug: 'chillers-fancoils', label: 'Чиллеры, фанкойлы', aliases: ['chillers-fancoils', 'chillers, fancoils', 'чиллеры, фанкойлы', 'fan coils', 'fancoils'] },
-  { slug: 'silencers', label: 'Шумоглушители', aliases: ['silencers', 'шумоглушители'] },
-  { slug: 'parts-accessories', label: 'Запчасти и аксессуары', aliases: ['parts-accessories', 'parts and accessories', 'запчасти и аксессуары'] }
+  { slug: 'conditioners', label: 'Кондиционеры', count: 1243, icon: '❄️', aliases: ['conditioners', 'air-conditioners', 'air conditioners', 'кондиционеры'] },
+  { slug: 'ventilation', label: 'Вентиляция', count: 632, icon: '💨', aliases: ['ventilation', 'вентиляция'] },
+  { slug: 'heaters', label: 'Нагреватели', count: 814, icon: '🔥', aliases: ['heaters', 'нагреватели'] },
+  { slug: 'coolers', label: 'Охладители', count: 421, icon: '🧊', aliases: ['coolers', 'охладители'] },
+  { slug: 'heat-pumps', label: 'Тепловые насосы', count: 598, icon: '♨️', aliases: ['heat-pumps', 'heat pumps', 'тепловые насосы'] },
+  { slug: 'humidifiers', label: 'Увлажнители', count: 290, icon: '💧', aliases: ['humidifiers', 'увлажнители'] },
+  { slug: 'chillers-fancoils', label: 'Чиллеры, фанкойлы', count: 157, icon: '🧊', aliases: ['chillers-fancoils', 'chillers, fancoils', 'чиллеры, фанкойлы', 'fan coils', 'fancoils'] },
+  { slug: 'silencers', label: 'Шумоглушители', count: 118, icon: '🔇', aliases: ['silencers', 'шумоглушители'] },
+  { slug: 'parts-accessories', label: 'Запчасти и аксессуары', count: 232, icon: '🧩', aliases: ['parts-accessories', 'parts and accessories', 'запчасти и аксессуары'] }
 ] as const
 
 const catalogBrands = [

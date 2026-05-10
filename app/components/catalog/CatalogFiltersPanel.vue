@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppInput from '~/components/ui/AppInput.vue'
+import { ref, toRefs, computed, watch } from 'vue'
 
 interface BrandOption {
   slug: string
@@ -10,6 +10,8 @@ interface BrandOption {
 interface CategoryOption {
   slug: string
   label: string
+  count?: number
+  icon?: string
 }
 
 interface Props {
@@ -18,12 +20,23 @@ interface Props {
   selectedCategorySlugs: string[]
   catalogBrands: readonly BrandOption[]
   categories: readonly CategoryOption[]
+  availableCount?: number
   hasActiveFilters?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
+  availableCount: 0,
   hasActiveFilters: false
 })
+
+const {
+  selectedBrandSlugs,
+  selectedCategorySlugs,
+  catalogBrands,
+  categories,
+  availableCount,
+  hasActiveFilters
+} = toRefs(props)
 
 defineEmits<{
   'update:searchQuery': [value: string]
@@ -32,50 +45,75 @@ defineEmits<{
   clearFilters: []
 }>()
 
-const classes = {
-  wrapper: 'space-y-6',
-  header: 'flex items-center justify-between',
-  title: 'text-lg font-heading font-bold',
-  resetButton: [
-    'text-sm',
-    'text-secondary',
-    'transition',
-    'hover:text-white',
-    'focus:outline-none',
-    'focus:ring-2',
-    'focus:ring-secondary/40',
-  ],
-  section: 'space-y-3',
-  sectionTitle: 'text-sm font-semibold uppercase tracking-widest text-white/50',
-  label: [
-    'flex',
-    'cursor-pointer',
-    'items-start',
-    'gap-3',
-    'rounded-xl',
-    'border',
-    'border-white/5',
-    'bg-white/5',
-    'px-3',
-    'py-3',
-    'transition',
-    'hover:border-white/15',
-  ],
-  checkbox: [
-    'mt-1',
-    'h-4',
-    'w-4',
-    'rounded',
-    'border-white/20',
-    'bg-transparent',
-    'text-secondary',
-    'focus:ring-secondary',
-  ],
-  brandInfo: 'flex flex-col',
-  brandName: 'font-medium text-white/90',
-  brandDescription: 'text-sm text-white/45',
-  categoryLabel: 'text-sm text-white/80',
+const priceFrom = ref(0)
+const priceTo = ref(1500000)
+const isInStock = ref(true)
+const categoriesExpanded = ref(false)
+
+watch(priceFrom, (newValue) => {
+  if (newValue > priceTo.value) {
+    priceFrom.value = priceTo.value
+  }
+})
+
+watch(priceTo, (newValue) => {
+  if (newValue < priceFrom.value) {
+    priceTo.value = priceFrom.value
+  }
+})
+
+const visibleCategories = computed(() => {
+  return categoriesExpanded.value ? categories.value : categories.value.slice(0, 5)
+})
+
+const hasMoreCategories = computed(() => {
+  return categories.value.length > 5
+})
+
+const pricePresets = [50000, 100000, 200000, 300000, 500000, 800000, 1000000, 1500000]
+
+const getIcon = (category: CategoryOption) => {
+  return category.icon || '📦'
 }
+
+
+const classes = {
+  wrapper: 'filter-panel p-6 space-y-6',
+  header: 'flex items-center justify-between gap-4',
+  title: 'text-xl font-heading font-bold tracking-tight text-[#3b1364]',
+  resetButton: 'filter-panel-reset',
+  section: 'space-y-4',
+  sectionTitle: 'text-sm font-semibold tracking-tight text-[#3b1364]',
+  sectionList: 'space-y-3',
+  categoryList: 'space-y-2',
+  categoryRow: 'flex items-center gap-2 px-2 py-2 cursor-pointer transition filter-panel-category-row w-full',
+  categoryRowActive: 'filter-panel-category-row-active',
+  categoryIcon: 'text-base shrink-0',
+  categoryLabel: 'text-sm filter-panel-heading',
+  categoryCount: 'text-xs filter-panel-muted ml-auto',
+  expandButton: 'w-full mt-2 px-3 py-2 text-sm font-semibold text-left text-[#3b1364] transition filter-panel-expand-btn',
+  itemCard: 'filter-panel-card flex flex-col gap-3 rounded-[28px] p-4 transition',
+  itemCardRow: 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
+  itemMeta: 'flex items-center gap-3 min-w-0',
+  itemIcon: 'filter-panel-icon',
+  itemTitle: 'text-sm font-semibold filter-panel-heading',
+  itemDescription: 'text-xs filter-panel-muted leading-relaxed',
+  itemCount: 'text-sm font-semibold filter-panel-muted',
+  brandRow: 'flex items-center justify-between gap-3 px-2 py-3 cursor-pointer transition filter-panel-brand-row',
+  brandRowActive: 'filter-panel-brand-row-active',
+  brandLabel: 'text-sm font-semibold filter-panel-heading',
+  brandAction: 'text-xs filter-panel-muted',
+  priceSection: 'space-y-3',
+  priceSlider: 'w-full',
+  priceInputs: 'grid grid-cols-2 gap-3',
+  priceInput: 'filter-panel-price-input',
+  priceDropdown: 'filter-panel-price-dropdown',
+  stockSection: 'space-y-3',
+  stockRow: 'flex items-center justify-between',
+  stockCheckbox: 'flex items-center gap-3',
+  stockCount: 'text-sm font-semibold filter-panel-heading',
+}
+
 </script>
 
 <template>
@@ -83,60 +121,490 @@ const classes = {
     <div :class="classes.header">
       <h2 :class="classes.title">Фильтры</h2>
       <button
-        v-if="hasActiveFilters"
         type="button"
         :class="classes.resetButton"
+        :disabled="!hasActiveFilters"
         @click="$emit('clearFilters')"
       >
         Сбросить
       </button>
     </div>
 
-    <section aria-labelledby="catalog-search-title" :class="classes.section">
-      <h3 id="catalog-search-title" :class="classes.sectionTitle">Поиск</h3>
-      <AppInput
-        :model-value="searchQuery"
-        placeholder="Поиск товаров..."
-        type="search"
-        @update:model-value="$emit('update:searchQuery', String($event))"
-      />
-    </section>
-
     <section aria-labelledby="catalog-brand-title" :class="classes.section">
       <h3 id="catalog-brand-title" :class="classes.sectionTitle">Бренд</h3>
-      <label
-        v-for="brand in catalogBrands"
-        :key="brand.slug"
-        :class="classes.label"
-      >
-        <input
-          :checked="selectedBrandSlugs.includes(brand.slug)"
-          type="checkbox"
-          :class="classes.checkbox"
-          @change="$emit('toggleBrand', brand.slug)"
+      <div :class="classes.sectionList">
+        <button
+          v-for="brand in catalogBrands"
+          :key="brand.slug"
+          type="button"
+          :class="[
+            classes.brandRow,
+            selectedBrandSlugs.includes(brand.slug) && classes.brandRowActive
+          ]"
+          :aria-pressed="selectedBrandSlugs.includes(brand.slug)"
+          @click="$emit('toggleBrand', brand.slug)"
         >
-        <span :class="classes.brandInfo">
-          <span :class="classes.brandName">{{ brand.name }}</span>
-          <span :class="classes.brandDescription">{{ brand.shortDescription }}</span>
-        </span>
-      </label>
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-[#3b1364]">
+              {{ brand.name.slice(0, 2).toUpperCase() }}
+            </span>
+            <div class="min-w-0">
+              <div :class="classes.brandLabel">{{ brand.name }}</div>
+            </div>
+          </div>
+          <span :class="classes.brandAction">{{ selectedBrandSlugs.includes(brand.slug) ? 'Выбрано' : 'Выбрать' }}</span>
+        </button>
+      </div>
     </section>
 
     <section aria-labelledby="catalog-category-title" :class="classes.section">
-      <h3 id="catalog-category-title" :class="classes.sectionTitle">Категория</h3>
-      <label
-        v-for="category in categories"
-        :key="category.slug"
-        :class="classes.label"
-      >
-        <input
-          :checked="selectedCategorySlugs.includes(category.slug)"
-          type="checkbox"
-          :class="classes.checkbox"
-          @change="$emit('toggleCategory', category.slug)"
+      <h3 id="catalog-category-title" :class="classes.sectionTitle">Категории</h3>
+      <div :class="classes.categoryList">
+        <button
+          v-for="category in visibleCategories"
+          :key="category.slug"
+          type="button"
+          :class="[
+            classes.categoryRow,
+            selectedCategorySlugs.includes(category.slug) && classes.categoryRowActive
+          ]"
+          :aria-pressed="selectedCategorySlugs.includes(category.slug)"
+          @click="$emit('toggleCategory', category.slug)"
         >
-        <span :class="classes.categoryLabel">{{ category.label }}</span>
-      </label>
+          <span :class="classes.categoryIcon">{{ getIcon(category) }}</span>
+          <span :class="classes.categoryLabel">{{ category.label }}</span>
+          <span :class="classes.categoryCount">{{ category.count ?? 0 }}</span>
+        </button>
+      </div>
+      <button
+        v-if="hasMoreCategories"
+        type="button"
+        :class="classes.expandButton"
+        @click="categoriesExpanded = !categoriesExpanded"
+      >
+        {{ categoriesExpanded ? 'Скрыть ▴' : 'Показать ещё ▾' }}
+      </button>
+    </section>
+
+    <section aria-labelledby="catalog-price-title" :class="classes.section">
+      <h3 id="catalog-price-title" :class="classes.sectionTitle">Цена</h3>
+      <div :class="classes.priceSection">
+        <div class="range-slider-container">
+          <input
+            v-model.number="priceFrom"
+            type="range"
+            min="0"
+            max="1500000"
+            step="1000"
+            class="range-slider range-slider-from"
+            aria-label="Минимальная цена"
+          >
+          <input
+            v-model.number="priceTo"
+            type="range"
+            min="0"
+            max="1500000"
+            step="1000"
+            class="range-slider range-slider-to"
+            aria-label="Максимальная цена"
+          >
+          <div class="range-track">
+            <div
+              class="range-fill"
+              :style="{
+                left: (priceFrom / 1500000) * 100 + '%',
+                right: 100 - (priceTo / 1500000) * 100 + '%'
+              }"
+            />
+          </div>
+        </div>
+
+        <div :class="classes.priceInputs">
+          <div class="filter-panel-input-group">
+            <span class="filter-panel-input-label">от</span>
+            <input
+              v-model.number="priceFrom"
+              type="number"
+              class="filter-panel-price-input filter-panel-price-input-left"
+              min="0"
+              max="1500000"
+            >
+          </div>
+          <div class="filter-panel-input-group filter-panel-dropdown-group">
+            <span class="filter-panel-input-label">до</span>
+            <input
+              v-model.number="priceTo"
+              type="number"
+              class="filter-panel-price-input filter-panel-price-input-right"
+              min="0"
+              max="1500000"
+            >
+            <span class="filter-panel-currency">₽</span>
+            <span class="filter-panel-dropdown-icon">▾</span>
+            <div class="filter-panel-dropdown-menu">
+              <button
+                v-for="preset in pricePresets"
+                :key="preset"
+                type="button"
+                class="filter-panel-dropdown-item"
+                @click="priceTo = preset"
+              >
+                {{ preset.toLocaleString('ru-RU') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="catalog-stock-title" :class="classes.section">
+      <h3 id="catalog-stock-title" :class="classes.sectionTitle">Наличие</h3>
+      <div :class="classes.stockRow">
+        <label :class="classes.stockCheckbox">
+          <input
+            v-model="isInStock"
+            type="checkbox"
+            class="sr-only"
+          >
+          <span class="filter-switch">
+            <span class="track" aria-hidden="true" />
+          </span>
+          <span class="text-sm filter-panel-heading">В наличии</span>
+        </label>
+        <span :class="classes.stockCount">{{ availableCount.toLocaleString('ru-RU') }}</span>
+      </div>
     </section>
   </div>
 </template>
+
+<style scoped>
+.filter-panel {
+  background: var(--color-surface);
+  border: 1px solid rgba(var(--color-border-rgb), 0.18);
+  box-shadow: 0 30px 60px rgba(15, 23, 42, 0.08);
+  border-radius: 1.75rem;
+}
+
+.filter-panel-heading {
+  color: var(--color-text);
+}
+
+.filter-panel-reset {
+  color: var(--color-primary);
+  border: 1px solid rgba(var(--color-border-rgb), 0.18);
+  background: rgba(var(--color-text-rgb), 0.06);
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+.filter-panel-reset:hover {
+  background: rgba(var(--color-text-rgb), 0.1);
+}
+
+.filter-panel-reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.filter-panel-section-title {
+  color: #3b1364;
+  text-transform: none;
+}
+
+.filter-panel-button {
+  border: 1px solid rgba(var(--color-border-rgb), 0.18);
+  background: rgba(var(--color-text-rgb), 0.04);
+  color: var(--color-text);
+}
+
+.filter-panel-button:hover {
+  border-color: rgba(var(--color-border-rgb), 0.3);
+}
+
+.filter-panel-button-active {
+  color: var(--color-primary);
+}
+
+.filter-panel-card {
+  border: 1px solid rgba(var(--color-border-rgb), 0.18);
+  background: rgba(var(--color-text-rgb), 0.06);
+}
+
+.filter-panel-icon {
+  display: flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  border: 1px solid rgba(var(--color-border-rgb), 0.18);
+  background: transparent;
+  color: var(--color-primary);
+}
+
+.filter-panel-muted {
+  color: rgba(var(--color-text-rgb), 0.55);
+}
+
+.filter-panel-brand-row,
+.filter-panel-category-row {
+  background: transparent;
+  border: none;
+}
+
+.filter-panel-brand-row:hover,
+.filter-panel-category-row:hover {
+  background: transparent;
+}
+
+.filter-panel-brand-row-active,
+.filter-panel-category-row-active {
+  background: transparent;
+  color: var(--color-primary);
+}
+
+.filter-panel-expand-btn {
+  background: transparent;
+  border: none;
+  color: #3b1364;
+  padding-left: 0;
+  padding-right: 0;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.filter-panel-expand-btn:hover {
+  background: rgba(var(--color-text-rgb), 0.04);
+}
+
+/* Dual range slider */
+.range-slider-container {
+  position: relative;
+  height: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.range-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 0.5rem;
+  background: linear-gradient(90deg, #7c3aed, #ec4899);
+  border-radius: 0.5rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.range-fill {
+  position: absolute;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 0.5rem;
+}
+
+.range-slider {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+  z-index: 5;
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+  pointer-events: all;
+  transition: box-shadow 200ms ease;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.range-slider::-moz-range-thumb {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+  pointer-events: all;
+  transition: box-shadow 200ms ease;
+}
+
+.range-slider::-moz-range-thumb:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.range-slider-from {
+  z-index: 4;
+}
+
+.range-slider-to {
+  z-index: 3;
+}
+
+.range-slider-from::-webkit-slider-thumb {
+  background: #7c3aed;
+}
+
+.range-slider-to::-webkit-slider-thumb {
+  background: #ec4899;
+}
+
+.range-slider-from::-moz-range-thumb {
+  background: #7c3aed;
+}
+
+.range-slider-to::-moz-range-thumb {
+  background: #ec4899;
+}
+
+/* Price inputs */
+.filter-panel-input-group {
+  position: relative;
+}
+
+.filter-panel-input-label {
+  position: absolute;
+  left: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(var(--color-text-rgb), 0.55);
+  font-size: 0.75rem;
+  font-weight: 600;
+  pointer-events: none;
+  text-transform: none;
+}
+
+.filter-panel-price-input {
+  width: 100%;
+  /* padding: 1.25rem 3rem 0.75rem 3.5rem; */
+  border: 1px solid rgba(var(--color-border-rgb), 0.18);
+  border-radius: 0.75rem;
+  background: rgba(var(--color-text-rgb), 0.04);
+  color: var(--color-text);
+  font-size: 0.75rem;
+  transition: border-color 200ms ease, background 200ms ease;
+}
+
+.filter-panel-price-input-left {
+  padding-left: 1.7rem;
+}
+
+.filter-panel-price-input-right {
+  padding-left: 1.5rem;
+}
+
+.filter-panel-price-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(var(--color-text-rgb), 0.06);
+}
+
+.filter-panel-price-input::-webkit-inner-spin-button,
+.filter-panel-price-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.filter-panel-price-input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.filter-panel-currency {
+  position: absolute;
+  right: 1.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(var(--color-text-rgb), 0.55);
+  pointer-events: none;
+  font-size: 0.875rem;
+}
+
+.filter-panel-dropdown-icon {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(var(--color-text-rgb), 0.55);
+  pointer-events: none;
+  font-size: 0.9rem;
+}
+
+.filter-panel-dropdown-group {
+  position: relative;
+}
+
+.filter-panel-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid rgba(var(--color-border-rgb), 0.18);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  min-width: 120px;
+  z-index: 10;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.filter-panel-dropdown-group:focus-within .filter-panel-dropdown-menu {
+  display: block;
+}
+
+.filter-panel-price-input:focus-within ~ .filter-panel-dropdown-menu {
+  display: block;
+}
+
+.filter-panel-input-group:focus-within .filter-panel-dropdown-menu {
+  display: block;
+}
+
+.filter-panel-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  text-align: right;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.filter-panel-dropdown-item:hover {
+  background: rgba(var(--color-primary-rgb), 0.1);
+}
+
+.filter-panel-dropdown-item:first-child {
+  border-radius: 0.625rem 0.625rem 0 0;
+}
+
+.filter-panel-dropdown-item:last-child {
+  border-radius: 0 0 0.625rem 0.625rem;
+}
+
+/* Stock section */
+.filter-panel-switch-row {
+  border: none;
+  background: transparent;
+}
+</style>

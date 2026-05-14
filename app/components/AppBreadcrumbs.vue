@@ -16,6 +16,10 @@ const breadcrumbs = computed(() => {
     if (segment === 'brands') name = 'Бренды'
     if (segment === 'delivery') name = 'Доставка'
     if (segment === 'contacts') name = 'Контакты'
+    if (segment === 'cart') name = 'Корзина'
+    if (segment === 'favorites') name = 'Избранное'
+    if (segment === 'compare') name = 'Сравнение'
+    if (segment === 'profile') name = 'Профиль'
 
     crumbs.push({ name, to: currentPath })
   })
@@ -39,7 +43,7 @@ const classes = {
 </script>
 
 <template>
-  <nav :aria-label="classes.nav">
+  <nav :class="classes.nav" aria-label="Хлебные крошки">
     <ol :class="classes.list">
       <li v-for="(crumb, index) in breadcrumbs" :key="crumb.to" :class="classes.item">
         <NuxtLink

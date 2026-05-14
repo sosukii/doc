@@ -117,12 +117,12 @@ const getIcon = (category: CategoryOption) => {
 
 
 const classes = {
-  wrapper: 'filter-panel p-6 space-y-6',
+  wrapper: 'filter-panel space-y-5 p-4 sm:space-y-6 sm:p-6',
   header: 'flex items-center justify-between gap-4',
-  title: 'text-xl font-heading font-bold tracking-tight text-[#3b1364]',
+  title: 'text-lg font-heading font-bold tracking-tight filter-panel-heading sm:text-xl',
   resetButton: 'filter-panel-reset',
   section: 'space-y-4',
-  sectionTitle: 'text-sm font-semibold tracking-tight text-[#3b1364]',
+  sectionTitle: 'text-sm font-semibold tracking-tight filter-panel-heading',
   sectionList: 'space-y-3',
   categoryList: 'space-y-2',
   categoryRow: 'flex items-center gap-2 px-2 py-2 cursor-pointer transition filter-panel-category-row w-full',
@@ -130,8 +130,8 @@ const classes = {
   categoryIcon: 'text-base shrink-0',
   categoryLabel: 'text-sm filter-panel-heading',
   categoryCount: 'text-xs filter-panel-muted ml-auto',
-  expandButton: 'w-full mt-2 px-3 py-2 text-sm font-semibold text-left text-[#3b1364] transition filter-panel-expand-btn',
-  itemCard: 'filter-panel-card flex flex-col gap-3 rounded-[28px] p-4 transition',
+  expandButton: 'w-full mt-2 px-3 py-2 text-sm font-semibold text-left transition filter-panel-expand-btn',
+  itemCard: 'filter-panel-card flex flex-col gap-3 rounded-[20px] p-3 transition sm:rounded-[28px] sm:p-4',
   itemCardRow: 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
   itemMeta: 'flex items-center gap-3 min-w-0',
   itemIcon: 'filter-panel-icon',
@@ -141,7 +141,7 @@ const classes = {
   brandRow: 'flex items-center justify-between gap-3 px-2 py-3 cursor-pointer transition filter-panel-brand-row',
   brandRowActive: 'filter-panel-brand-row-active',
   brandLabel: 'text-sm font-semibold filter-panel-heading',
-  brandAction: 'text-xs filter-panel-muted',
+  brandAction: 'hidden text-xs filter-panel-muted sm:inline',
   priceSection: 'space-y-3',
   priceSlider: 'w-full',
   priceInputs: 'grid grid-cols-2 gap-3',
@@ -406,7 +406,7 @@ const classes = {
 .filter-panel-expand-btn {
   background: transparent;
   border: none;
-  color: #3b1364;
+  color: var(--color-text);
   padding-left: 0;
   padding-right: 0;
   justify-content: flex-start;
@@ -531,12 +531,12 @@ const classes = {
 
 .filter-panel-price-input {
   width: 100%;
-  /* padding: 1.25rem 3rem 0.75rem 3.5rem; */
   border: 1px solid rgba(var(--color-border-rgb), 0.18);
   border-radius: 0.75rem;
   background: rgba(var(--color-text-rgb), 0.04);
   color: var(--color-text);
   font-size: 0.75rem;
+  min-height: 2.5rem;
   transition: border-color 200ms ease, background 200ms ease;
 }
 

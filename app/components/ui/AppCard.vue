@@ -11,8 +11,10 @@ withDefaults(defineProps<Props>(), {
 const classes = {
   container: [
     'glass-panel',
-    'p-6',
-    'sm:p-8',
+    'p-4',
+    'sm:p-6',
+    'lg:p-8',
+    'min-w-0',
   ],
   variants: {
     low: 'bg-surface-container-low/40',

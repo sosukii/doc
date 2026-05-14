@@ -31,7 +31,8 @@ export default defineNuxtConfig({
     '@nuxt/fonts',
     '@nuxt/scripts',
     '@nuxtjs/i18n',
-    '@nuxt/eslint'
+    '@nuxt/eslint',
+    '@pinia/nuxt'
   ],
 
   routeRules: isProduction
@@ -113,7 +114,6 @@ export default defineNuxtConfig({
       { code: 'en', iso: 'en-US', file: 'en.json', name: 'English' }
     ],
     defaultLocale: 'ru',
-    lazy: true,
     langDir: 'locales/',
     strategy: 'prefix_except_default'
   },

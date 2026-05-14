@@ -5,11 +5,16 @@ import AppPagination from '~/components/ui/AppPagination.vue'
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalog } from '~/composables/useCatalog'
 import { useCatalogMetadata } from '~/composables/useCatalogMetadata'
-import { formatPriceRub } from '~/utils/price'
-import { optimizeProductCardImageUrl } from '~/utils/cloudinaryImages'
+import { useCartStore } from '~/stores/cart'
+import { useFavoritesStore } from '~/stores/favorites'
+import { useCompareStore } from '~/stores/compare'
+import { formatPrice } from '~/utils/price'
 
 const route = useRoute()
 const router = useRouter()
+const cartStore = useCartStore()
+const favoritesStore = useFavoritesStore()
+const compareStore = useCompareStore()
 const {
   perPage,
   getCachedProductsPageByFilters,
@@ -630,9 +635,9 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="py-12">
-    <div class="container mx-auto px-4">
-      <div class="grid gap-10 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
+  <div class="py-8 sm:py-10 lg:py-12">
+    <div class="container mx-auto px-4 sm:px-6 xl:px-8">
+      <div class="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-8 xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-10">
         <aside class="hidden space-y-6 lg:block">
           <CatalogFiltersPanel
             class="sticky top-28"
@@ -654,11 +659,11 @@ useSeoMeta({
           />
         </aside>
 
-        <div class="space-y-8">
+        <div class="min-w-0 space-y-6 lg:space-y-8">
           <div class="lg:hidden">
             <AppButton
               variant="glass"
-              class="w-full justify-between rounded-2xl px-5 py-4 text-left"
+              class="w-full flex-col items-start justify-between gap-1 rounded-2xl px-5 py-4 text-left sm:flex-row sm:items-center"
               aria-label="Открыть фильтры"
               :aria-expanded="isFilterDrawerOpen"
               :aria-controls="filtersDrawerId"
@@ -677,7 +682,7 @@ useSeoMeta({
             <div class="space-y-4">
               <div>
                 <p class="text-xs uppercase tracking-[0.3em] text-white/40">Бренд</p>
-                <h2 class="mt-2 text-3xl font-heading font-bold">{{ activeBrand.name }}</h2>
+                <h2 class="mt-2 text-2xl font-heading font-bold sm:text-3xl">{{ activeBrand.name }}</h2>
               </div>
               <ul class="space-y-2 text-white/70">
                 <li v-for="line in activeBrand.catalogDescription" :key="line">{{ line }}</li>
@@ -704,7 +709,7 @@ useSeoMeta({
 
           <div
             v-if="products.length"
-            class="grid grid-cols-1 gap-8 transition-opacity duration-200 sm:grid-cols-2 xl:grid-cols-3 min-w-0"
+            class="grid grid-cols-1 gap-4 transition-opacity duration-200 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 min-w-0"
             :class="isRouteFetching ? 'opacity-90' : 'opacity-100'"
           >
             <AppCard
@@ -713,7 +718,7 @@ useSeoMeta({
               class="flex h-full flex-col group"
               variant="medium"
             >
-              <div class="relative mb-6 flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-white/6 bg-white/[0.04] p-4">
+              <div class="relative mb-5 flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-white/6 bg-white/[0.04] p-3 sm:mb-6 sm:p-4">
                 <div
                   class="absolute inset-0 rounded-xl bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.14),_transparent_58%),linear-gradient(135deg,rgba(255,255,255,0.09),rgba(255,255,255,0.03))] transition-opacity duration-300"
                   :class="loadedProductImages[resolveProductImage(product.images?.[0])] ? 'opacity-0' : 'opacity-100 animate-pulse'"
@@ -733,7 +738,7 @@ useSeoMeta({
                   @error="markProductImageLoaded(resolveProductImage(product.images?.[0]))"
                 />
                 <div class="absolute right-4 top-4 glass-panel px-3 py-1 text-xs font-bold text-secondary">
-                  {{ formatPriceRub(product.price) }}
+                  {{ formatPrice(product.price) }}
                 </div>
               </div>
               <div class="flex flex-grow flex-col gap-2">
@@ -749,6 +754,45 @@ useSeoMeta({
                 </p>
               </div>
               <template #footer>
+                <div class="mb-3 grid grid-cols-3 gap-2">
+                  <button
+                    :class="[
+                      'min-h-10 rounded-lg p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/40',
+                      favoritesStore.isFavorite(product._id)
+                        ? 'bg-red-500 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    ]"
+                    :aria-label="favoritesStore.isFavorite(product._id) ? 'Убрать из избранного' : 'Добавить в избранное'"
+                    @click="favoritesStore.toggleFavorite(product)"
+                  >
+                    <svg class="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                  </button>
+                  <button
+                    :class="[
+                      'min-h-10 rounded-lg p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/40',
+                      compareStore.isInCompare(product._id)
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    ]"
+                    :aria-label="compareStore.isInCompare(product._id) ? 'Убрать из сравнения' : 'Добавить к сравнению'"
+                    @click="compareStore.toggleCompare(product)"
+                  >
+                    <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </button>
+                  <button
+                    class="min-h-10 rounded-lg bg-primary p-2 text-white transition-colors hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    aria-label="Добавить в корзину"
+                    @click="cartStore.addToCart(product)"
+                  >
+                    <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5H19M7 13l-1.1 5M7 13h10m0 0v5a2 2 0 01-2 2H9a2 2 0 01-2-2v-5" />
+                    </svg>
+                  </button>
+                </div>
                 <AppButton variant="primary" :to="`/products/${product.slug}`" class="w-full">
                   Подробнее
                 </AppButton>
@@ -763,7 +807,7 @@ useSeoMeta({
             @change="handlePageChange"
           />
 
-          <div v-if="isCatalogLoading && !products.length" class="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-3 min-w-0">
+          <div v-if="isCatalogLoading && !products.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 min-w-0">
             <CatalogProductCardSkeleton
               v-for="placeholderIndex in perPage"
               :key="`placeholder-${placeholderIndex}`"
@@ -818,7 +862,7 @@ useSeoMeta({
         <div
           v-if="isFilterDrawerOpen"
           :id="filtersDrawerId"
-          class="fixed inset-x-0 bottom-0 z-50 max-h-[86vh] overflow-hidden rounded-t-[32px] border border-white/10 bg-[#08111f]/98 shadow-[0_-24px_80px_rgba(0,0,0,0.45)] lg:hidden"
+          class="fixed inset-x-0 bottom-0 z-50 max-h-[88svh] overflow-hidden rounded-t-[28px] border border-white/10 bg-[#08111f]/98 shadow-[0_-24px_80px_rgba(0,0,0,0.45)] sm:left-1/2 sm:max-w-xl sm:-translate-x-1/2 sm:rounded-t-[32px] lg:hidden"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="filterDrawerTitleId"
@@ -835,7 +879,7 @@ useSeoMeta({
               ×
             </button>
           </div>
-          <div class="max-h-[calc(86vh-88px)] overflow-y-auto px-5 py-5">
+          <div class="max-h-[calc(88svh-88px)] overflow-y-auto px-4 py-5 sm:px-5">
             <CatalogFiltersPanel
               :search-query="searchQuery"
               :selected-brand-slugs="selectedBrandSlugs"

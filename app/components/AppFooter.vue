@@ -11,7 +11,7 @@ const classes = {
     'border-t',
     'border-white/5',
   ],
-  container: 'container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8',
+  container: 'container mx-auto grid grid-cols-1 gap-8 px-4 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-8 xl:px-8',
   section: 'flex flex-col gap-6',
   logo: [
     'flex',
@@ -45,6 +45,8 @@ const classes = {
     'container',
     'mx-auto',
     'px-4',
+    'sm:px-6',
+    'xl:px-8',
     'pt-12',
     'mt-12',
     'border-t',

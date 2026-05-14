@@ -38,6 +38,9 @@ export const optimizeCloudinaryImageUrl = (src: string, transformation = CLOUDIN
   }
 
   const firstSegment = pathSegments[0]
+  if (!firstSegment) {
+    return src
+  }
   const nextSegments = hasCloudinaryTransformation(firstSegment)
     ? [transformation, ...pathSegments.slice(1)]
     : [transformation, ...pathSegments]

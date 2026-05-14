@@ -52,16 +52,16 @@ useSeoMeta({
 
 <template>
   <main>
-    <section class="relative flex min-h-[90vh] items-center overflow-hidden">
-      <div class="container mx-auto z-10 grid items-center gap-12 px-4 lg:grid-cols-2">
-        <div class="animate-fade-in flex max-w-2xl flex-col gap-8">
-          <h1 class="text-4xl font-heading font-bold leading-tight lg:text-7xl" style="font-size: clamp(2rem, 8vw, 4rem);">
+    <section class="relative flex min-h-[calc(100svh-2rem)] items-center overflow-hidden pb-12 pt-28 sm:pb-16 sm:pt-32 lg:min-h-[90vh] lg:pt-28">
+      <div class="container mx-auto z-10 grid items-center gap-10 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.86fr)] lg:gap-12 xl:px-8">
+        <div class="animate-fade-in flex max-w-2xl flex-col gap-6 sm:gap-8">
+          <h1 class="text-4xl font-heading font-bold leading-tight lg:text-7xl" style="font-size: clamp(2.25rem, 9vw, 4.5rem);">
             Будущее <span class="gradient-text">Атмосферы</span> уже здесь
           </h1>
-          <p class="text-lg leading-relaxed text-white/60 sm:text-xl">
+          <p class="max-w-xl text-base leading-relaxed text-white/60 sm:text-lg lg:text-xl">
             Мы создаем пространства, где технологии незаметны, а ощущения - незабываемы. Прецизионная точность в каждой детали.
           </p>
-          <div class="mt-4 flex flex-wrap gap-4">
+          <div class="mt-2 grid gap-3 sm:flex sm:flex-wrap sm:gap-4">
             <AppButton variant="primary" to="/products">Смотреть каталог</AppButton>
             <AppButton variant="glass" to="/services">Наши кейсы</AppButton>
           </div>
@@ -75,7 +75,7 @@ useSeoMeta({
             width="600"
             height="600"
             sizes="(min-width: 1024px) 46vw, 92vw"
-            class="glass-panel rounded-3xl p-4 shadow-2xl rotate-3 transform transition-transform duration-500 hover:rotate-0 hover:scale-105"
+            class="glass-panel aspect-square w-full rounded-3xl p-4 shadow-2xl rotate-3 transform object-cover transition-transform duration-500 hover:rotate-0 hover:scale-105"
             loading="eager"
             fetchpriority="high"
           />

@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useCatalogNavigationWarmup } from '~/composables/useCatalogNavigationWarmup'
 
 interface Props {
-  variant?: 'primary' | 'glass' | 'text'
+  variant?: 'primary' | 'secondary' | 'glass' | 'text'
   to?: string
   type?: 'button' | 'submit' | 'reset'
   loading?: boolean
@@ -37,6 +37,7 @@ const classes = {
   ],
   variants: {
     primary: 'btn-primary',
+    secondary: 'btn-secondary',
     glass: 'btn-glass',
     text: 'btn-text',
   },

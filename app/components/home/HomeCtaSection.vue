@@ -3,8 +3,8 @@ import AppButton from '~/components/ui/AppButton.vue'
 import AppCard from '~/components/ui/AppCard.vue'
 
 const classes = {
-  section: 'container mx-auto px-4 py-24',
-  card: 'relative overflow-hidden py-16 text-center lg:py-24',
+  section: 'container mx-auto px-4 py-16 sm:px-6 sm:py-20 lg:py-24 xl:px-8',
+  card: 'relative overflow-hidden px-4 py-12 text-center sm:px-8 sm:py-16 lg:py-24',
   bgBlob: [
     'absolute',
     'right-0',
@@ -26,8 +26,8 @@ const classes = {
     'gap-8',
   ],
   title: 'text-3xl font-heading font-bold lg:text-6xl',
-  subtitle: 'text-xl text-white/70',
-  actions: 'flex justify-center gap-4',
+  subtitle: 'text-base leading-relaxed text-white/70 sm:text-lg lg:text-xl',
+  actions: 'grid justify-center gap-4 sm:flex',
 }
 </script>
 

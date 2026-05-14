@@ -1,3 +1,8 @@
+interface NetworkInformation {
+  effectiveType?: string
+  saveData?: boolean
+}
+
 interface BackgroundTask {
   key: string
   run: () => Promise<void>
@@ -42,7 +47,7 @@ const shouldSkipBackgroundWork = () => {
     return true
   }
 
-  const connection = navigator.connection as (NetworkInformation & {
+  const connection = (navigator as any).connection as (NetworkInformation & {
     saveData?: boolean
     effectiveType?: string
   }) | undefined

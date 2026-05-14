@@ -1,8 +1,8 @@
 <script setup lang="ts">
 const classes = {
-  section: 'py-24',
-  container: 'container mx-auto grid grid-cols-2 gap-8 px-4 lg:grid-cols-4',
-  stat: 'text-center',
+  section: 'py-16 sm:py-20 lg:py-24',
+  container: 'container mx-auto grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 sm:gap-6 sm:px-6 lg:grid-cols-4 xl:px-8',
+  stat: 'rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-6 text-center sm:bg-transparent',
   value: [
     'mb-2',
     'text-3xl',

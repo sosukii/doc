@@ -9,6 +9,9 @@ interface Product {
   images: string[]
   category: string
   brand?: string
+  availabilityStatus?: string
+  warrantyInformation?: string
+  shippingInformation?: string
   isPublished: boolean
   createdAt?: string
   updatedAt?: string

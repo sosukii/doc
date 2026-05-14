@@ -13,18 +13,18 @@ defineProps<{
 }>()
 
 const classes = {
-  section: 'bg-surface-container-low/20 py-24',
-  container: 'container mx-auto px-4',
-  header: 'mb-16 text-center',
-  title: 'mb-6 text-4xl font-heading font-bold lg:text-5xl',
-  subtitle: 'mx-auto max-w-2xl text-white/60',
-  grid: 'grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 min-w-0',
+  section: 'bg-surface-container-low/20 py-16 sm:py-20 lg:py-24',
+  container: 'container mx-auto px-4 sm:px-6 xl:px-8',
+  header: 'mb-10 text-center sm:mb-14 lg:mb-16',
+  title: 'mb-4 text-3xl font-heading font-bold sm:text-4xl lg:text-5xl',
+  subtitle: 'mx-auto max-w-2xl text-sm leading-relaxed text-white/60 sm:text-base',
+  grid: 'grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-4 min-w-0',
   card: [
     'group',
     'relative',
     'flex',
     'h-full',
-    'min-h-[250px]',
+    'min-h-[220px]',
     'sm:min-h-[300px]',
     'flex-col',
     'justify-end',

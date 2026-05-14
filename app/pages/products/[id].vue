@@ -154,11 +154,11 @@ useSeoMeta({
 </script>
 
 <template>
-  <div v-if="product" class="py-12 lg:py-20">
-    <div class="container mx-auto px-4">
-      <div class="grid gap-12 lg:grid-cols-2 lg:gap-20">
+  <div v-if="product" class="py-8 sm:py-12 lg:py-20">
+    <div class="container mx-auto px-4 sm:px-6 xl:px-8">
+      <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)] lg:gap-12 xl:gap-20">
         <div class="flex flex-col gap-6">
-          <div class="glass-panel flex aspect-square items-center justify-center overflow-hidden rounded-3xl border-white/5 bg-white/5 p-4">
+          <div class="glass-panel flex aspect-square items-center justify-center overflow-hidden rounded-3xl border-white/5 bg-white/5 p-3 sm:p-4">
             <NuxtImg
               :src="galleryImages[activeImage] || fallbackImage"
               :alt="product.title"
@@ -170,7 +170,7 @@ useSeoMeta({
               fetchpriority="high"
             />
           </div>
-          <div class="grid grid-cols-4 gap-4">
+          <div class="grid grid-cols-4 gap-2 sm:gap-4">
             <button
               v-for="(img, index) in galleryImages"
               :key="index"
@@ -194,12 +194,12 @@ useSeoMeta({
           </div>
         </div>
 
-        <div class="flex flex-col gap-8">
+        <div class="flex min-w-0 flex-col gap-6 lg:gap-8">
           <div class="flex flex-col gap-2">
             <div class="text-xs font-bold uppercase tracking-widest text-white/40">{{ getCategoryLabel(product.category) }}</div>
-            <h1 class="text-4xl font-heading font-bold lg:text-5xl">{{ product.title }}</h1>
-            <div class="mt-2 flex items-center gap-4">
-              <span class="text-3xl font-bold text-secondary">{{ formatPriceRub(product.price) }}</span>
+            <h1 class="text-3xl font-heading font-bold sm:text-4xl lg:text-5xl">{{ product.title }}</h1>
+            <div class="mt-2 flex flex-wrap items-center gap-3 sm:gap-4">
+              <span class="text-2xl font-bold text-secondary sm:text-3xl">{{ formatPriceRub(product.price) }}</span>
               <span class="text-sm text-white/40">{{ product.availabilityStatus || 'Под заказ' }}</span>
             </div>
           </div>
@@ -209,7 +209,7 @@ useSeoMeta({
             <p class="leading-relaxed text-white/60">{{ product.description }}</p>
           </div>
 
-          <div class="grid grid-cols-2 gap-6 rounded-2xl border border-white/5 bg-surface-container-low/30 p-6">
+          <div class="grid grid-cols-1 gap-4 rounded-2xl border border-white/5 bg-surface-container-low/30 p-4 sm:grid-cols-2 sm:gap-6 sm:p-6">
             <div class="flex flex-col gap-1">
               <span class="text-xs uppercase tracking-tighter text-white/40">Бренд</span>
               <span class="text-sm font-medium">{{ product.brand ? getBrandLabel(product.brand) : 'Avent' }}</span>
@@ -240,11 +240,11 @@ useSeoMeta({
         </div>
       </div>
 
-      <section class="mt-32" aria-labelledby="related-products-title">
-        <h2 id="related-products-title" class="mb-12 text-3xl font-heading font-bold">Похожие товары</h2>
+      <section class="mt-20 sm:mt-24 lg:mt-32" aria-labelledby="related-products-title">
+        <h2 id="related-products-title" class="mb-8 text-2xl font-heading font-bold sm:mb-12 sm:text-3xl">Похожие товары</h2>
         <div
           v-if="relatedProducts.length"
-          class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4"
+          class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4"
         >
           <AppCard
             v-for="item in relatedProducts"

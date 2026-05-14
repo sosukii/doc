@@ -660,6 +660,13 @@ useSeoMeta({
         </aside>
 
         <div class="min-w-0 space-y-6 lg:space-y-8">
+          <header class="space-y-2">
+            <h1 class="text-3xl font-heading font-bold sm:text-4xl">Каталог</h1>
+            <p class="max-w-3xl text-sm leading-relaxed text-white/60 sm:text-base">
+              Подберите оборудование по категории, бренду и бюджету.
+            </p>
+          </header>
+
           <div class="lg:hidden">
             <AppButton
               variant="glass"

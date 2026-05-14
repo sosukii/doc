@@ -1,6 +1,32 @@
 <template>
   <div class="container mx-auto px-4 py-8 sm:px-6 lg:py-10 xl:px-8">
-    <h1 class="mt-6 text-3xl font-heading font-bold sm:mt-8 sm:text-4xl">Сравнение товаров</h1>
+    <div class="mt-6 flex flex-col gap-4 sm:mt-8 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <h1 class="text-3xl font-heading font-bold sm:text-4xl">Сравнение товаров</h1>
+        <p v-if="compareStore.items.length" class="mt-2 text-sm text-white/50">
+          {{ compareStore.items.length }} {{ productCountLabel }} в списке сравнения
+        </p>
+      </div>
+
+      <div
+        v-if="compareStore.items.length"
+        class="inline-grid w-full grid-cols-2 rounded-xl border border-white/10 bg-white/[0.04] p-1 sm:w-auto"
+        aria-label="Режим отображения характеристик"
+      >
+        <button
+          v-for="option in comparisonViewOptions"
+          :key="option.value"
+          type="button"
+          class="min-h-10 rounded-lg px-3 text-sm font-medium transition-colors sm:px-4"
+          :class="comparisonViewMode === option.value
+            ? 'bg-primary text-white shadow-lg shadow-primary/15'
+            : 'text-white/60 hover:bg-white/10 hover:text-white'"
+          @click="comparisonViewMode = option.value"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </div>
 
     <div v-if="compareStore.items.length === 0" class="mt-12 text-center">
       <div class="mx-auto max-w-md">
@@ -15,100 +41,92 @@
       </div>
     </div>
 
-    <div v-else class="mt-8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] sm:mt-12">
-      <div class="overflow-x-auto">
-      <table class="w-full min-w-[720px] border-collapse md:min-w-[800px]">
+    <div v-else class="mt-8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] sm:mt-10">
+      <div class="relative overflow-x-auto overscroll-x-contain">
+      <table class="w-full min-w-[720px] table-fixed border-collapse sm:min-w-[820px] lg:min-w-[900px]">
+        <colgroup>
+          <col class="w-[160px] sm:w-[190px] lg:w-[220px]">
+          <col
+            v-for="product in compareStore.items"
+            :key="`col-${product._id}`"
+            class="w-[210px] sm:w-[240px] lg:w-[260px]"
+          >
+        </colgroup>
         <thead>
           <tr class="border-b border-white/10">
-            <th class="p-4 text-left text-sm font-medium text-white/60">Характеристика</th>
+            <th class="sticky left-0 z-30 border-r border-white/10 bg-[rgba(var(--color-surface-rgb),0.92)] p-4 text-left align-top text-sm font-medium text-white/60 shadow-[12px_0_24px_rgba(0,0,0,0.08)] backdrop-blur-xl">
+              <span class="whitespace-nowrap break-normal">Характеристика</span>
+            </th>
             <th
               v-for="product in compareStore.items"
               :key="product._id"
-              class="p-4 text-center min-w-[200px]"
+              class="p-3 text-center align-top sm:p-4"
             >
-              <div class="space-y-4">
+              <div class="relative flex min-h-[220px] flex-col items-center justify-start gap-3 rounded-xl border border-white/5 bg-white/[0.03] p-3 pt-10 sm:min-h-[240px] sm:gap-4 sm:p-4 sm:pt-11">
+                <button
+                  type="button"
+                  aria-label="Убрать из сравнения"
+                  class="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-400/20 bg-red-500/10 text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-400/30"
+                  @click="compareStore.removeFromCompare(product._id)"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
                 <NuxtImg
                   :src="product.images?.[0] || '/placeholder.jpg'"
                   :alt="product.title"
                   width="150"
                   height="150"
-                  class="mx-auto h-28 w-28 rounded-lg object-cover sm:h-32 sm:w-32"
+                  class="h-28 w-28 rounded-lg object-contain sm:h-32 sm:w-32"
                 />
-                <h3 class="text-sm font-bold">{{ product.title }}</h3>
-                <button
-                  aria-label="Убрать из сравнения"
-                  class="text-red-400 hover:text-red-300 transition-colors"
-                  @click="compareStore.removeFromCompare(product._id)"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <h3 class="line-clamp-3 text-sm font-bold leading-snug">{{ product.title }}</h3>
               </div>
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr class="border-b border-white/5">
-            <td class="p-4 font-medium text-white/80">Название</td>
-            <td v-for="product in compareStore.items" :key="`title-${product._id}`" class="p-4 text-center">
-              {{ product.title }}
-            </td>
-          </tr>
-          <tr class="border-b border-white/5">
-            <td class="p-4 font-medium text-white/80">Цена</td>
-            <td v-for="product in compareStore.items" :key="`price-${product._id}`" class="p-4 text-center font-bold">
-              {{ formatPrice(product.price) }}
-            </td>
-          </tr>
-          <tr class="border-b border-white/5">
-            <td class="p-4 font-medium text-white/80">Бренд</td>
-            <td v-for="product in compareStore.items" :key="`brand-${product._id}`" class="p-4 text-center">
-              {{ product.brand || '—' }}
-            </td>
-          </tr>
-          <tr class="border-b border-white/5">
-            <td class="p-4 font-medium text-white/80">Категория</td>
-            <td v-for="product in compareStore.items" :key="`category-${product._id}`" class="p-4 text-center">
-              {{ product.category }}
-            </td>
-          </tr>
-          <tr class="border-b border-white/5">
-            <td class="p-4 font-medium text-white/80">Артикул</td>
-            <td v-for="product in compareStore.items" :key="`article-${product._id}`" class="p-4 text-center">
-              {{ product._id }}
-            </td>
-          </tr>
-          <tr class="border-b border-white/5">
-            <td class="p-4 font-medium text-white/80">Наличие</td>
-            <td v-for="product in compareStore.items" :key="`availability-${product._id}`" class="p-4 text-center">
-              <span :class="product.availabilityStatus === 'В наличии' ? 'text-green-400' : 'text-orange-400'">
-                {{ product.availabilityStatus || 'Под заказ' }}
+          <tr
+            v-for="row in visibleComparisonRows"
+            :key="row.key"
+            class="border-b border-white/5 last:border-b-0"
+          >
+            <th scope="row" class="sticky left-0 z-20 border-r border-white/10 bg-[rgba(var(--color-surface-rgb),0.88)] p-4 text-left align-middle text-sm font-medium text-white/80 shadow-[12px_0_24px_rgba(0,0,0,0.08)] backdrop-blur-xl">
+              <span class="block whitespace-normal break-normal leading-snug">{{ row.label }}</span>
+            </th>
+            <td
+              v-for="product in compareStore.items"
+              :key="`${row.key}-${product._id}`"
+              class="p-4 text-center align-middle text-sm leading-relaxed"
+            >
+              <span
+                v-if="row.key === 'availability'"
+                :class="row.value(product) === 'В наличии' ? 'text-green-400' : 'text-orange-400'"
+              >
+                {{ row.value(product) }}
+              </span>
+              <span v-else :class="row.strong ? 'font-bold' : ''">
+                {{ row.value(product) }}
               </span>
             </td>
           </tr>
-          <tr class="border-b border-white/5">
-            <td class="p-4 font-medium text-white/80">Гарантия</td>
-            <td v-for="product in compareStore.items" :key="`warranty-${product._id}`" class="p-4 text-center">
-              {{ product.warrantyInformation || 'По запросу' }}
+
+          <tr v-if="visibleComparisonRows.length === 0" class="border-b border-white/5">
+            <td :colspan="compareStore.items.length + 1" class="p-8 text-center text-sm text-white/50">
+              Отличающихся характеристик нет
             </td>
           </tr>
-          <tr class="border-b border-white/5">
-            <td class="p-4 font-medium text-white/80">Доставка</td>
-            <td v-for="product in compareStore.items" :key="`shipping-${product._id}`" class="p-4 text-center">
-              {{ product.shippingInformation || 'Уточняется' }}
-            </td>
-          </tr>
+
           <tr>
-            <td class="p-4 font-medium text-white/80">Действия</td>
+            <th scope="row" class="sticky left-0 z-20 border-r border-white/10 bg-[rgba(var(--color-surface-rgb),0.88)] p-4 text-left align-middle text-sm font-medium text-white/80 shadow-[12px_0_24px_rgba(0,0,0,0.08)] backdrop-blur-xl">Действия</th>
             <td v-for="product in compareStore.items" :key="`actions-${product._id}`" class="p-4 text-center">
               <div class="flex flex-col gap-2">
-                <AppButton variant="primary" :to="`/products/${product.slug}`" size="sm">
+                <AppButton variant="primary" :to="`/products/${product.slug}`" class="w-full px-3 py-2 text-sm">
                   Подробнее
                 </AppButton>
                 <AppButton
-                  size="sm"
                   variant="secondary"
+                  class="w-full px-3 py-2 text-sm"
                   @click="cartStore.addToCart(product)"
                 >
                   В корзину
@@ -124,15 +142,225 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import AppButton from '~/components/ui/AppButton.vue'
 import { useCompareStore } from '~/stores/compare'
 import { useCartStore } from '~/stores/cart'
 import { formatPrice } from '~/utils/price'
+import type { Product } from '~/composables/useCatalog'
 
 const compareStore = useCompareStore()
 const cartStore = useCartStore()
 
-// Set page meta
+type ComparisonViewMode = 'all' | 'different'
+type ProductProperties = Record<string, unknown>
+
+interface ComparisonRow {
+  key: string
+  label: string
+  strong?: boolean
+  value: (product: Product) => string
+}
+
+const comparisonViewMode = ref<ComparisonViewMode>('all')
+const comparisonViewOptions: Array<{ label: string, value: ComparisonViewMode }> = [
+  { label: 'Все характеристики', value: 'all' },
+  { label: 'Только отличия', value: 'different' }
+]
+
+const productCountLabel = computed(() => {
+  const count = compareStore.items.length
+  const lastTwoDigits = count % 100
+  const lastDigit = count % 10
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return 'товаров'
+  }
+
+  if (lastDigit === 1) {
+    return 'товар'
+  }
+
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return 'товара'
+  }
+
+  return 'товаров'
+})
+
+const isPlainRecord = (value: unknown): value is Record<string, unknown> => (
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+)
+
+const getPropertyKeyFromItem = (item: Record<string, unknown>) => {
+  const key = item.key ?? item.name ?? item.title ?? item.label
+  return typeof key === 'string' && key.trim() ? key.trim() : ''
+}
+
+const normalizeProperties = (product: Product): ProductProperties => {
+  if (!product.properties) {
+    return {}
+  }
+
+  if (Array.isArray(product.properties)) {
+    return product.properties.reduce<ProductProperties>((properties, item) => {
+      if (!isPlainRecord(item)) {
+        return properties
+      }
+
+      const key = getPropertyKeyFromItem(item)
+
+      if (!key) {
+        return properties
+      }
+
+      properties[key] = Object.prototype.hasOwnProperty.call(item, 'value') ? item.value : item
+      return properties
+    }, {})
+  }
+
+  return product.properties
+}
+
+const getPropertyDisplayLabel = (key: string) => {
+  for (const product of compareStore.items) {
+    const property = normalizeProperties(product)[key]
+
+    if (isPlainRecord(property)) {
+      const label = property.label ?? property.title ?? property.name
+
+      if (typeof label === 'string' && label.trim()) {
+        return label.trim()
+      }
+    }
+  }
+
+  return key
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+const unwrapPropertyValue = (value: unknown): unknown => {
+  if (!isPlainRecord(value)) {
+    return value
+  }
+
+  if (Object.prototype.hasOwnProperty.call(value, 'value')) {
+    return value.value
+  }
+
+  return value
+}
+
+const formatComparisonValue = (value: unknown): string => {
+  const unwrappedValue = unwrapPropertyValue(value)
+
+  if (unwrappedValue === null || unwrappedValue === undefined || unwrappedValue === '') {
+    return '—'
+  }
+
+  if (typeof unwrappedValue === 'boolean') {
+    return unwrappedValue ? 'Да' : 'Нет'
+  }
+
+  if (Array.isArray(unwrappedValue)) {
+    const values = unwrappedValue.map(formatComparisonValue).filter(item => item !== '—')
+    return values.length ? values.join(', ') : '—'
+  }
+
+  if (isPlainRecord(unwrappedValue)) {
+    const values = Object.entries(unwrappedValue)
+      .filter(([key]) => !['key', 'name', 'title', 'label'].includes(key))
+      .map(([key, item]) => `${getPropertyDisplayLabel(key)}: ${formatComparisonValue(item)}`)
+      .filter(item => !item.endsWith(': —'))
+
+    return values.length ? values.join('; ') : '—'
+  }
+
+  return String(unwrappedValue)
+}
+
+const normalizeComparableValue = (value: string) => value.trim().toLocaleLowerCase('ru-RU')
+
+const isDifferentRow = (row: ComparisonRow) => {
+  const values = compareStore.items.map(product => normalizeComparableValue(row.value(product)))
+  return new Set(values).size > 1
+}
+
+const baseComparisonRows = computed<ComparisonRow[]>(() => [
+  {
+    key: 'title',
+    label: 'Название',
+    value: product => product.title
+  },
+  {
+    key: 'price',
+    label: 'Цена',
+    strong: true,
+    value: product => formatPrice(product.price)
+  },
+  {
+    key: 'brand',
+    label: 'Бренд',
+    value: product => product.brand || '—'
+  },
+  {
+    key: 'category',
+    label: 'Категория',
+    value: product => product.category || '—'
+  },
+  {
+    key: 'article',
+    label: 'Артикул',
+    value: product => product._id
+  },
+  {
+    key: 'availability',
+    label: 'Наличие',
+    value: product => product.availabilityStatus || 'Под заказ'
+  },
+  {
+    key: 'warranty',
+    label: 'Гарантия',
+    value: product => product.warrantyInformation || 'По запросу'
+  },
+  {
+    key: 'shipping',
+    label: 'Доставка',
+    value: product => product.shippingInformation || 'Уточняется'
+  }
+])
+
+const propertyComparisonRows = computed<ComparisonRow[]>(() => {
+  const propertyKeys = new Set<string>()
+
+  compareStore.items.forEach((product) => {
+    Object.keys(normalizeProperties(product)).forEach(key => propertyKeys.add(key))
+  })
+
+  return Array.from(propertyKeys)
+    .map(key => ({
+      key: `property-${key}`,
+      label: getPropertyDisplayLabel(key),
+      value: (product: Product) => formatComparisonValue(normalizeProperties(product)[key])
+    }))
+    .sort((left, right) => left.label.localeCompare(right.label, 'ru'))
+})
+
+const comparisonRows = computed(() => [
+  ...baseComparisonRows.value,
+  ...propertyComparisonRows.value
+])
+
+const visibleComparisonRows = computed(() => {
+  if (comparisonViewMode.value === 'all') {
+    return comparisonRows.value
+  }
+
+  return comparisonRows.value.filter(isDifferentRow)
+})
+
 useHead({
   title: 'Сравнение - AVENT'
 })

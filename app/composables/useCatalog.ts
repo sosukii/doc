@@ -9,6 +9,7 @@ interface Product {
   images: string[]
   category: string
   brand?: string
+  properties?: Record<string, unknown> | Array<Record<string, unknown>>
   availabilityStatus?: string
   warrantyInformation?: string
   shippingInformation?: string

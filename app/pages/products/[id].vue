@@ -17,6 +17,7 @@ interface Product {
   category: string
   isPublished: boolean
   brand?: string
+  properties?: Record<string, unknown> | Array<Record<string, unknown>>
   warrantyInformation?: string
   shippingInformation?: string
   availabilityStatus?: string

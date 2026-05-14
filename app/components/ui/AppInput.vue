@@ -11,7 +11,13 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
+  modelValue: undefined,
   type: 'text',
+  placeholder: undefined,
+  label: undefined,
+  error: undefined,
+  name: undefined,
+  ariaLabel: undefined,
   tabindex: 0
 })
 

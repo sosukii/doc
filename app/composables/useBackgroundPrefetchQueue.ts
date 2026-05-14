@@ -3,6 +3,10 @@ interface NetworkInformation {
   saveData?: boolean
 }
 
+interface NavigatorWithConnection extends Navigator {
+  connection?: NetworkInformation
+}
+
 interface BackgroundTask {
   key: string
   run: () => Promise<void>
@@ -47,10 +51,7 @@ const shouldSkipBackgroundWork = () => {
     return true
   }
 
-  const connection = (navigator as any).connection as (NetworkInformation & {
-    saveData?: boolean
-    effectiveType?: string
-  }) | undefined
+  const connection = (navigator as NavigatorWithConnection).connection
 
   if (connection?.saveData) {
     return true

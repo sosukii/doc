@@ -110,6 +110,7 @@ const classes = {
     'focus:outline-none',
   ],
   mobileMenuPanel: [
+    'mobile-menu-panel',
     'xl:hidden',
     'absolute',
     'top-[calc(100%+0.75rem)]',
@@ -118,10 +119,7 @@ const classes = {
     'max-h-[calc(100vh-7rem)]',
     'overflow-y-auto',
     'rounded-[24px]',
-    'bg-background/95',
     'backdrop-blur-xl',
-    'border',
-    'border-white/10',
     'p-4',
     'shadow-[0_24px_80px_rgba(0,0,0,0.24)]',
   ],
@@ -345,6 +343,12 @@ const classes = {
 </template>
 
 <style scoped>
+.mobile-menu-panel {
+  color: var(--color-text);
+  background: rgba(var(--color-surface-rgb), 0.92);
+  border: 1px solid rgba(var(--color-border-rgb), 0.18);
+}
+
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.3s ease, transform 0.3s ease;
 }

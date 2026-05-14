@@ -118,8 +118,8 @@ const getIcon = (category: CategoryOption) => {
 
 const classes = {
   wrapper: 'filter-panel space-y-5 p-4 sm:space-y-6 sm:p-6',
-  header: 'flex items-center justify-between gap-4',
-  title: 'text-lg font-heading font-bold tracking-tight filter-panel-heading sm:text-xl',
+  header: 'flex items-center justify-between gap-2',
+  title: 'shrink-0 whitespace-nowrap text-lg font-heading font-bold tracking-tight filter-panel-heading sm:text-xl lg:text-lg xl:text-xl',
   resetButton: 'filter-panel-reset',
   section: 'space-y-4',
   sectionTitle: 'text-sm font-semibold tracking-tight filter-panel-heading',
@@ -131,23 +131,12 @@ const classes = {
   categoryLabel: 'text-sm filter-panel-heading',
   categoryCount: 'text-xs filter-panel-muted ml-auto',
   expandButton: 'w-full mt-2 px-3 py-2 text-sm font-semibold text-left transition filter-panel-expand-btn',
-  itemCard: 'filter-panel-card flex flex-col gap-3 rounded-[20px] p-3 transition sm:rounded-[28px] sm:p-4',
-  itemCardRow: 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
-  itemMeta: 'flex items-center gap-3 min-w-0',
-  itemIcon: 'filter-panel-icon',
-  itemTitle: 'text-sm font-semibold filter-panel-heading',
-  itemDescription: 'text-xs filter-panel-muted leading-relaxed',
-  itemCount: 'text-sm font-semibold filter-panel-muted',
   brandRow: 'flex items-center justify-between gap-3 px-2 py-3 cursor-pointer transition filter-panel-brand-row',
   brandRowActive: 'filter-panel-brand-row-active',
   brandLabel: 'text-sm font-semibold filter-panel-heading',
   brandAction: 'hidden text-xs filter-panel-muted sm:inline',
   priceSection: 'space-y-3',
-  priceSlider: 'w-full',
   priceInputs: 'grid grid-cols-2 gap-3',
-  priceInput: 'filter-panel-price-input',
-  priceDropdown: 'filter-panel-price-dropdown',
-  stockSection: 'space-y-3',
   stockRow: 'flex items-center justify-between',
   stockCheckbox: 'flex items-center gap-3',
   stockCount: 'text-sm font-semibold filter-panel-heading',
@@ -329,11 +318,16 @@ const classes = {
 }
 
 .filter-panel-reset {
+  flex-shrink: 0;
   color: var(--color-primary);
   border: 1px solid rgba(var(--color-border-rgb), 0.18);
   background: rgba(var(--color-text-rgb), 0.06);
   border-radius: 9999px;
-  padding: 0.5rem 1rem;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.875rem;
+  line-height: 1;
+  white-space: nowrap;
   transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
 }
 
@@ -346,40 +340,17 @@ const classes = {
   cursor: not-allowed;
 }
 
-.filter-panel-section-title {
-  color: #3b1364;
-  text-transform: none;
-}
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .filter-panel {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
 
-.filter-panel-button {
-  border: 1px solid rgba(var(--color-border-rgb), 0.18);
-  background: rgba(var(--color-text-rgb), 0.04);
-  color: var(--color-text);
-}
-
-.filter-panel-button:hover {
-  border-color: rgba(var(--color-border-rgb), 0.3);
-}
-
-.filter-panel-button-active {
-  color: var(--color-primary);
-}
-
-.filter-panel-card {
-  border: 1px solid rgba(var(--color-border-rgb), 0.18);
-  background: rgba(var(--color-text-rgb), 0.06);
-}
-
-.filter-panel-icon {
-  display: flex;
-  height: 2.75rem;
-  width: 2.75rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 1rem;
-  border: 1px solid rgba(var(--color-border-rgb), 0.18);
-  background: transparent;
-  color: var(--color-primary);
+  .filter-panel-reset {
+    padding-left: 0.7rem;
+    padding-right: 0.7rem;
+    font-size: 0.8125rem;
+  }
 }
 
 .filter-panel-muted {
@@ -639,11 +610,5 @@ const classes = {
 
 .filter-panel-dropdown-item:last-child {
   border-radius: 0 0 0.625rem 0.625rem;
-}
-
-/* Stock section */
-.filter-panel-switch-row {
-  border: none;
-  background: transparent;
 }
 </style>

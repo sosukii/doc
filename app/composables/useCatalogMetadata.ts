@@ -14,6 +14,7 @@ const catalogBrands = [
   {
     slug: 'lessar',
     name: 'Lessar',
+    aliases: ['lessar', 'лесар', 'lessar кондиционеры', 'лесар-кондиционеры'],
     shortDescription: 'климатическое оборудование для бытовых и коммерческих объектов.',
     catalogDescription: [
       'Бренд климатического оборудования.',
@@ -24,6 +25,7 @@ const catalogBrands = [
   {
     slug: 'daikin',
     name: 'Daikin',
+    aliases: ['daikin', 'дайкин', 'daikin кондиционеры', 'дайкин-кондиционеры'],
     shortDescription: 'японский бренд климатической техники с сильной репутацией в кондиционировании.',
     catalogDescription: [
       'Японский бренд.',
@@ -38,13 +40,17 @@ const normalizeSlug = (value = '') => value.trim().toLowerCase()
 const findCategoryByValue = (value = '') => {
   const normalizedValue = normalizeSlug(value)
 
-  return catalogCategories.find((category) => category.aliases.some(alias => normalizeSlug(alias) === normalizedValue))
+  return catalogCategories.find((category) => category.aliases.some((alias: string) => normalizeSlug(alias) === normalizedValue))
 }
 
 const findBrandByValue = (value = '') => {
   const normalizedValue = normalizeSlug(value)
 
-  return catalogBrands.find((brand) => normalizeSlug(brand.slug) === normalizedValue || normalizeSlug(brand.name) === normalizedValue)
+  return catalogBrands.find((brand) =>
+    normalizeSlug(brand.slug) === normalizedValue ||
+    normalizeSlug(brand.name) === normalizedValue ||
+    brand.aliases.some((alias: string) => normalizeSlug(alias) === normalizedValue)
+  )
 }
 
 const normalizeCategorySlug = (value = '') => findCategoryByValue(value)?.slug || normalizeSlug(value)

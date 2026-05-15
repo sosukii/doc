@@ -5,6 +5,7 @@ export default defineNuxtConfig({
   app: {
     baseURL: '/',
   },
+  ssr: true,
   experimental: {
     defaults: {
       nuxtLink: {
@@ -17,7 +18,7 @@ export default defineNuxtConfig({
   },
   nitro: isProduction
     ? {
-        preset: 'github-pages',
+        preset: 'node-server',
       }
     : {},
   compatibilityDate: '2024-11-01',

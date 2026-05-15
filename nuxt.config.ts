@@ -3,7 +3,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 
 export default defineNuxtConfig({
   app: {
-    baseURL: isProduction ? '/doc/' : '/',
+    baseURL: '/',
   },
   experimental: {
     defaults: {
@@ -136,7 +136,7 @@ export default defineNuxtConfig({
       noExternal: ['vue', 'vue-router', 'pinia']
     }
   },
-  
+
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://doc-api-r2vu.onrender.com'

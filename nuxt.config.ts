@@ -128,6 +128,15 @@ export default defineNuxtConfig({
     ]
   },
 
+  vite: {
+    optimizeDeps: {
+      include: ['vue', 'vue-router', 'pinia']
+    },
+    ssr: {
+      noExternal: ['vue', 'vue-router', 'pinia']
+    }
+  },
+  
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://doc-api-r2vu.onrender.com'

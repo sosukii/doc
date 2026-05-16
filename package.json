@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prepare": "husky",
-    "check:push": "pnpm lint && pnpm test:unit && pnpm build"
+    "check:push": "npm run lint && npm run test:unit && npm run build"
   },
   "lint-staged": {
     "*.{js,ts,vue}": [

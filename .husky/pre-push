@@ -1,1 +1,1 @@
-pnpm check:push
+npm run check:push

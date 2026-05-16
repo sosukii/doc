@@ -16,11 +16,9 @@ export default defineNuxtConfig({
       },
     },
   },
-  nitro: isProduction
-    ? {
-        preset: 'node-server',
-      }
-    : {},
+  nitro: {
+    preset: 'node-server',
+  },
   compatibilityDate: '2024-11-01',
   future: {
     compatibilityVersion: 4,

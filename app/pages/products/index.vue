@@ -5,16 +5,9 @@ import AppPagination from '~/components/ui/AppPagination.vue'
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalog } from '~/composables/useCatalog'
 import { useCatalogMetadata } from '~/composables/useCatalogMetadata'
-import { useCartStore } from '~/stores/cart'
-import { useFavoritesStore } from '~/stores/favorites'
-import { useCompareStore } from '~/stores/compare'
-import { formatPrice } from '~/utils/price'
 
 const route = useRoute()
 const router = useRouter()
-const cartStore = useCartStore()
-const favoritesStore = useFavoritesStore()
-const compareStore = useCompareStore()
 const {
   perPage,
   getCachedProductsPageByFilters,
@@ -719,92 +712,17 @@ useSeoMeta({
             class="grid grid-cols-1 gap-4 transition-opacity duration-200 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 min-w-0"
             :class="isRouteFetching ? 'opacity-90' : 'opacity-100'"
           >
-            <AppCard
+            <CatalogProductCard
               v-for="(product, index) in products"
               :key="product._id"
-              class="flex h-full flex-col group"
-              variant="medium"
-            >
-              <div class="relative mb-5 flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-white/6 bg-white/[0.04] p-3 sm:mb-6 sm:p-4">
-                <div
-                  class="absolute inset-0 rounded-xl bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.14),_transparent_58%),linear-gradient(135deg,rgba(255,255,255,0.09),rgba(255,255,255,0.03))] transition-opacity duration-300"
-                  :class="loadedProductImages[resolveProductImage(product.images?.[0])] ? 'opacity-0' : 'opacity-100 animate-pulse'"
-                  aria-hidden="true"
-                />
-                <NuxtImg
-                  :src="resolveProductImage(product.images?.[0])"
-                  :alt="product.title"
-                  width="600"
-                  height="600"
-                  sizes="(min-width: 1280px) 28vw, (min-width: 640px) 44vw, 92vw"
-                  decoding="async"
-                  class="max-h-full max-w-full object-contain opacity-100 transition-transform duration-500 group-hover:scale-105"
-                  :loading="index < priorityImageCount ? 'eager' : 'lazy'"
-                  :fetchpriority="index < priorityImageCount ? 'high' : 'low'"
-                  @load="markProductImageLoaded(resolveProductImage(product.images?.[0]))"
-                  @error="markProductImageLoaded(resolveProductImage(product.images?.[0]))"
-                />
-                <div class="absolute right-4 top-4 glass-panel px-3 py-1 text-xs font-bold text-secondary">
-                  {{ formatPrice(product.price) }}
-                </div>
-              </div>
-              <div class="flex flex-grow flex-col gap-2">
-                <div class="flex flex-wrap gap-2 text-xs uppercase tracking-widest text-white/40">
-                  <span>{{ getCategoryLabel(product.category) }}</span>
-                  <span v-if="product.brand">{{ getBrandLabel(product.brand) }}</span>
-                </div>
-                <h2 class="line-clamp-1 text-lg font-heading font-bold transition-colors group-hover:text-primary">
-                  {{ product.title }}
-                </h2>
-                <p class="line-clamp-2 text-sm leading-relaxed text-white/60">
-                  {{ product.description }}
-                </p>
-              </div>
-              <template #footer>
-                <div class="mb-3 grid grid-cols-3 gap-2">
-                  <button
-                    :class="[
-                      'min-h-10 rounded-lg p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/40',
-                      favoritesStore.isFavorite(product._id)
-                        ? 'bg-red-500 text-white'
-                        : 'bg-white/10 text-white/70 hover:bg-white/20'
-                    ]"
-                    :aria-label="favoritesStore.isFavorite(product._id) ? 'Убрать из избранного' : 'Добавить в избранное'"
-                    @click="favoritesStore.toggleFavorite(product)"
-                  >
-                    <svg class="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
-                  <button
-                    :class="[
-                      'min-h-10 rounded-lg p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/40',
-                      compareStore.isInCompare(product._id)
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white/10 text-white/70 hover:bg-white/20'
-                    ]"
-                    :aria-label="compareStore.isInCompare(product._id) ? 'Убрать из сравнения' : 'Добавить к сравнению'"
-                    @click="compareStore.toggleCompare(product)"
-                  >
-                    <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </button>
-                  <button
-                    class="min-h-10 rounded-lg bg-primary p-2 text-white transition-colors hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    aria-label="Добавить в корзину"
-                    @click="cartStore.addToCart(product)"
-                  >
-                    <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5H19M7 13l-1.1 5M7 13h10m0 0v5a2 2 0 01-2 2H9a2 2 0 01-2-2v-5" />
-                    </svg>
-                  </button>
-                </div>
-                <AppButton variant="primary" :to="`/products/${product.slug}`" class="w-full">
-                  Подробнее
-                </AppButton>
-              </template>
-            </AppCard>
+              :product="product"
+              :image-src="resolveProductImage(product.images?.[0])"
+              :category-label="getCategoryLabel(product.category)"
+              :brand-label="product.brand ? getBrandLabel(product.brand) : undefined"
+              :image-loaded="Boolean(loadedProductImages[resolveProductImage(product.images?.[0])])"
+              :eager="index < priorityImageCount"
+              @image-load="markProductImageLoaded"
+            />
           </div>
 
           <AppPagination

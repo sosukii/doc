@@ -18,8 +18,12 @@ const toggleTheme = () => {
 }
 
 const cartStore = useCartStore()
-const _favoritesStore = useFavoritesStore()
-const _compareStore = useCompareStore()
+const favoritesStore = useFavoritesStore()
+const compareStore = useCompareStore()
+const favoritesCount = computed(() => favoritesStore.items.length)
+const compareCount = computed(() => compareStore.items.length)
+const cartCount = computed(() => cartStore.totalItems)
+const formatHeaderCounter = (value: number) => value > 99 ? '99+' : String(value)
 
 const navLinks = [
   { name: 'Каталог', to: '/products' },
@@ -152,24 +156,7 @@ const classes = {
     'focus:ring-secondary/40',
     'rounded-lg'
   ],
-  badge: [
-    'absolute',
-    'top-0',
-    'right-0',
-    'bg-red-500',
-    'text-white',
-    'text-xs',
-    'font-bold',
-    'rounded-full',
-    'w-5',
-    'h-5',
-    'flex',
-    'items-center',
-    'justify-center',
-    'transform',
-    'translate-x-1/2',
-    '-translate-y-1/2'
-  ]
+  badge: 'header-counter'
 }
 </script>
 
@@ -196,22 +183,28 @@ const classes = {
       </nav>
 
       <div :class="classes.desktopActions">
-        <NuxtLink to="/favorites" :class="classes.iconButton" aria-label="Избранное">
+        <NuxtLink to="/favorites" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Избранное, ${favoritesCount} товаров`">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
+          <span v-if="favoritesCount > 0" :class="[classes.badge]" aria-hidden="true">
+            {{ formatHeaderCounter(favoritesCount) }}
+          </span>
         </NuxtLink>
-        <NuxtLink to="/compare" :class="classes.iconButton" aria-label="Сравнение">
+        <NuxtLink to="/compare" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Сравнение, ${compareCount} товаров`">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
+          <span v-if="compareCount > 0" :class="[classes.badge]" aria-hidden="true">
+            {{ formatHeaderCounter(compareCount) }}
+          </span>
         </NuxtLink>
-        <NuxtLink to="/cart" :class="classes.iconButton" aria-label="Корзина">
+        <NuxtLink to="/cart" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Корзина, ${cartCount} товаров`">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5H19M7 13l-1.1 5M7 13h10m0 0v5a2 2 0 01-2 2H9a2 2 0 01-2-2v-5" />
           </svg>
-          <span v-if="cartStore.totalItems > 0" :class="classes.badge">
-            {{ cartStore.totalItems > 99 ? '99+' : cartStore.totalItems }}
+          <span v-if="cartCount > 0" :class="[classes.badge]" aria-hidden="true">
+            {{ formatHeaderCounter(cartCount) }}
           </span>
         </NuxtLink>
         <NuxtLink to="/profile" :class="classes.iconButton" aria-label="Профиль">
@@ -233,22 +226,28 @@ const classes = {
       </div>
 
       <div :class="classes.compactActions" aria-label="Быстрые действия">
-        <NuxtLink to="/favorites" :class="classes.iconButton" aria-label="Избранное">
+        <NuxtLink to="/favorites" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Избранное, ${favoritesCount} товаров`">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
+          <span v-if="favoritesCount > 0" :class="[classes.badge]" aria-hidden="true">
+            {{ formatHeaderCounter(favoritesCount) }}
+          </span>
         </NuxtLink>
-        <NuxtLink to="/compare" :class="classes.iconButton" aria-label="Сравнение">
+        <NuxtLink to="/compare" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Сравнение, ${compareCount} товаров`">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
+          <span v-if="compareCount > 0" :class="[classes.badge]" aria-hidden="true">
+            {{ formatHeaderCounter(compareCount) }}
+          </span>
         </NuxtLink>
-        <NuxtLink to="/cart" :class="classes.iconButton" aria-label="Корзина">
+        <NuxtLink to="/cart" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Корзина, ${cartCount} товаров`">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5H19M7 13l-1.1 5M7 13h10m0 0v5a2 2 0 01-2 2H9a2 2 0 01-2-2v-5" />
           </svg>
-          <span v-if="cartStore.totalItems > 0" :class="classes.badge">
-            {{ cartStore.totalItems > 99 ? '99+' : cartStore.totalItems }}
+          <span v-if="cartCount > 0" :class="[classes.badge]" aria-hidden="true">
+            {{ formatHeaderCounter(cartCount) }}
           </span>
         </NuxtLink>
         <NuxtLink to="/profile" :class="classes.iconButton" aria-label="Профиль">
@@ -301,22 +300,28 @@ const classes = {
         </nav>
         <div :class="classes.mobileActions">
           <div class="grid grid-cols-5 items-center gap-3 sm:grid-cols-[repeat(5,minmax(2.75rem,1fr))_auto]">
-            <NuxtLink to="/favorites" :class="classes.iconButton" aria-label="Избранное">
+            <NuxtLink to="/favorites" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Избранное, ${favoritesCount} товаров`">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
+              <span v-if="favoritesCount > 0" :class="[classes.badge]" aria-hidden="true">
+                {{ formatHeaderCounter(favoritesCount) }}
+              </span>
             </NuxtLink>
-            <NuxtLink to="/compare" :class="classes.iconButton" aria-label="Сравнение">
+            <NuxtLink to="/compare" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Сравнение, ${compareCount} товаров`">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
+              <span v-if="compareCount > 0" :class="[classes.badge]" aria-hidden="true">
+                {{ formatHeaderCounter(compareCount) }}
+              </span>
             </NuxtLink>
-            <NuxtLink to="/cart" :class="classes.iconButton" aria-label="Корзина">
+            <NuxtLink to="/cart" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Корзина, ${cartCount} товаров`">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5H19M7 13l-1.1 5M7 13h10m0 0v5a2 2 0 01-2 2H9a2 2 0 01-2-2v-5" />
               </svg>
-              <span v-if="cartStore.totalItems > 0" :class="classes.badge">
-                {{ cartStore.totalItems > 99 ? '99+' : cartStore.totalItems }}
+              <span v-if="cartCount > 0" :class="[classes.badge]" aria-hidden="true">
+                {{ formatHeaderCounter(cartCount) }}
               </span>
             </NuxtLink>
             <NuxtLink to="/profile" :class="classes.iconButton" aria-label="Профиль">
@@ -347,6 +352,66 @@ const classes = {
   color: var(--color-text);
   background: rgba(var(--color-surface-rgb), 0.92);
   border: 1px solid rgba(var(--color-border-rgb), 0.18);
+}
+
+.header-action {
+  border: 1px solid rgba(var(--color-border-rgb), 0.1);
+  overflow: visible;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.header-action:hover {
+  transform: none;
+}
+
+.header-action--quiet-depth {
+  border-color: transparent;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.header-action--quiet-depth:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: transparent;
+  color: var(--color-text);
+  box-shadow: 0 8px 18px rgba(29, 100, 216, 0.1);
+}
+
+.header-action--quiet-depth:active,
+.header-action--quiet-depth.router-link-active {
+  background: #77abff33;
+  box-shadow:
+    inset 0 3px 8px rgba(8, 26, 58, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  transform: translateY(1px) scale(0.96);
+}
+
+.header-counter {
+  position: absolute;
+  top: -0.24rem;
+  right: -0.24rem;
+  display: grid;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #0f7fb8);
+  box-shadow: 0 6px 14px rgba(29, 100, 216, 0.22);
+  color: #ffffff !important;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0 0.28rem;
+  transform: none;
 }
 
 .fade-enter-active, .fade-leave-active {

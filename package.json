@@ -13,7 +13,8 @@
     "test:e2e": "cypress run --headless",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check:push": "pnpm lint && pnpm test:unit && pnpm build"
   },
   "lint-staged": {
     "*.{js,ts,vue}": [

@@ -52,7 +52,7 @@ jobs:
 
             cd avent-front-release
 
-            npm ci --omit=dev
+            npm ci --omit=dev --ignore-scripts
 
             pm2 delete avent-front || true
             pm2 start .output/server/index.mjs --name avent-front

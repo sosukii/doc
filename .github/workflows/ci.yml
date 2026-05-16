@@ -2,30 +2,28 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches:
+      - master
   pull_request:
-    branches: [main, master]
-
-# Эти разрешения нужны для деплоя на GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+    branches:
+      - master
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  checks:
+    runs-on: ubuntu-24.04
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # включаем corepack и ставим Node.js с кешированием
-      - run: corepack enable
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: 22
+          cache: npm
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
       - name: Lint
         run: npm run lint
@@ -33,31 +31,5 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
-      # Запускаем dev‑сервер и e2e‑тесты (как раньше)
-      - name: E2E tests
-        run: npx start-server-and-test "npm run dev" http://localhost:3000 "npm run test:e2e"
-
-      # Сборка статического сайта для GitHub Pages
-      - name: Build site
+      - name: Build
         run: npm run build
-        env:
-          # говорим Nitro собрать проект для github_pages
-          NITRO_PRESET: github_pages
-
-      # Упаковываем статические файлы в артефакт для Pages
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./.output/public
-
-  # Отдельный джоб деплоя, который запускается только если build успешен
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4

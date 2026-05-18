@@ -1,6 +1,6 @@
 <template>
   <div class="container mx-auto px-4 py-8 sm:px-6 lg:py-10 xl:px-8">
-    <h1 class="mt-6 text-3xl font-heading font-bold sm:mt-8 sm:text-4xl">Корзина</h1>
+    <h1 class="sr-only">Корзина</h1>
 
     <div v-if="cartStore.items.length === 0" class="mt-12 text-center">
       <div class="mx-auto max-w-md">

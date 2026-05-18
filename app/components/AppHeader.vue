@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import AppButton from './ui/AppButton.vue'
 import { useCatalogNavigationWarmup } from '~/composables/useCatalogNavigationWarmup'
 import { useCartStore } from '~/stores/cart'
@@ -8,6 +8,8 @@ import { useCompareStore } from '~/stores/compare'
 
 const isMenuOpen = ref(false)
 const toggleMenu = () => isMenuOpen.value = !isMenuOpen.value
+const closeMenu = () => isMenuOpen.value = false
+const route = useRoute()
 const { warmCatalogListing } = useCatalogNavigationWarmup()
 
 const theme = useState<'dark' | 'light'>('theme-mode', () => 'dark')
@@ -26,12 +28,17 @@ const cartCount = computed(() => cartStore.totalItems)
 const formatHeaderCounter = (value: number) => value > 99 ? '99+' : String(value)
 
 const navLinks = [
-  { name: 'Каталог', to: '/products' },
-  { name: 'Услуги', to: '/services' },
-  { name: 'Бренды', to: '/brands' },
-  { name: 'Доставка', to: '/delivery' },
-  { name: 'Контакты', to: '/contacts' }
+  { name: 'Каталог', to: '/products', headerClass: 'md:inline-flex', mobileClass: 'md:hidden' },
+  { name: 'Услуги', to: '/services', headerClass: 'min-[940px]:inline-flex', mobileClass: 'min-[940px]:hidden' },
+  { name: 'Бренды', to: '/brands', headerClass: 'xl:inline-flex', mobileClass: 'xl:hidden' },
+  { name: 'Доставка', to: '/delivery', headerClass: 'xl:inline-flex', mobileClass: 'xl:hidden' },
+  { name: 'Контакты', to: '/contacts', headerClass: 'xl:inline-flex', mobileClass: 'xl:hidden' }
 ]
+
+watch(
+  () => route.fullPath,
+  () => closeMenu()
+)
 
 const classes = {
   header: [
@@ -79,15 +86,23 @@ const classes = {
     'transition-transform',
     'sm:text-2xl',
   ],
-  nav: 'hidden xl:flex items-center gap-6 2xl:gap-8',
+  nav: 'hidden md:flex items-center gap-2 min-[940px]:gap-3 xl:gap-6 2xl:gap-8',
   navLink: [
+    'hidden',
+    'items-center',
+    'rounded-full',
+    'px-3',
+    'py-2',
     'whitespace-nowrap',
     'text-sm',
     'font-medium',
     'text-white/70',
     'hover:text-white',
+    'hover:bg-white/10',
     'transition-colors',
     'focus:outline-none',
+    'focus-visible:ring-2',
+    'focus-visible:ring-secondary/40',
     'focus:text-white',
   ],
   desktopActions: 'hidden xl:flex items-center gap-2 2xl:gap-4',
@@ -96,8 +111,6 @@ const classes = {
   themeButton: [
     'theme-toggle',
     'focus:outline-none',
-    'focus:ring-2',
-    'focus:ring-secondary/40',
   ],
   mobileMenu: [
     'xl:hidden',
@@ -137,6 +150,8 @@ const classes = {
     'border-white/5',
   ],
   mobileActions: 'flex flex-col gap-4',
+  mobileQuickActions: 'grid grid-cols-5 items-center gap-3 sm:hidden',
+  mobileContactActions: 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
   mobilePhone: 'min-w-0 text-sm font-medium text-white/80 sm:text-base',
   iconButton: [
     'relative',
@@ -173,7 +188,7 @@ const classes = {
           :key="link.to"
           :to="link.to"
           prefetch-on="interaction"
-          :class="classes.navLink"
+          :class="[classes.navLink, link.headerClass]"
           @pointerenter="link.to === '/products' ? warmCatalogListing() : undefined"
           @focus="link.to === '/products' ? warmCatalogListing() : undefined"
           @mousedown="link.to === '/products' ? warmCatalogListing() : undefined"
@@ -269,6 +284,7 @@ const classes = {
       <button
         :class="classes.mobileMenu"
         aria-label="Toggle navigation menu"
+        :aria-expanded="isMenuOpen"
         @click="toggleMenu"
       >
         <svg v-if="!isMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,18 +305,18 @@ const classes = {
             :key="link.to"
             :to="link.to"
             prefetch-on="interaction"
-            :class="classes.mobileNavLink"
+            :class="[classes.mobileNavLink, link.mobileClass]"
             @pointerenter="link.to === '/products' ? warmCatalogListing() : undefined"
             @focus="link.to === '/products' ? warmCatalogListing() : undefined"
             @mousedown="link.to === '/products' ? warmCatalogListing() : undefined"
-            @click="isMenuOpen = false"
+            @click="closeMenu"
           >
             {{ link.name }}
           </NuxtLink>
         </nav>
         <div :class="classes.mobileActions">
-          <div class="grid grid-cols-5 items-center gap-3 sm:grid-cols-[repeat(5,minmax(2.75rem,1fr))_auto]">
-            <NuxtLink to="/favorites" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Избранное, ${favoritesCount} товаров`">
+          <div :class="classes.mobileQuickActions">
+            <NuxtLink to="/favorites" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Избранное, ${favoritesCount} товаров`" @click="closeMenu">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
@@ -308,7 +324,7 @@ const classes = {
                 {{ formatHeaderCounter(favoritesCount) }}
               </span>
             </NuxtLink>
-            <NuxtLink to="/compare" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Сравнение, ${compareCount} товаров`">
+            <NuxtLink to="/compare" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Сравнение, ${compareCount} товаров`" @click="closeMenu">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
@@ -316,7 +332,7 @@ const classes = {
                 {{ formatHeaderCounter(compareCount) }}
               </span>
             </NuxtLink>
-            <NuxtLink to="/cart" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Корзина, ${cartCount} товаров`">
+            <NuxtLink to="/cart" :class="[classes.iconButton, 'header-action', 'header-action--quiet-depth']" :aria-label="`Корзина, ${cartCount} товаров`" @click="closeMenu">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5H19M7 13l-1.1 5M7 13h10m0 0v5a2 2 0 01-2 2H9a2 2 0 01-2-2v-5" />
               </svg>
@@ -324,7 +340,7 @@ const classes = {
                 {{ formatHeaderCounter(cartCount) }}
               </span>
             </NuxtLink>
-            <NuxtLink to="/profile" :class="classes.iconButton" aria-label="Профиль">
+            <NuxtLink to="/profile" :class="classes.iconButton" aria-label="Профиль" @click="closeMenu">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
@@ -338,9 +354,11 @@ const classes = {
               <span v-if="isDark">☀️</span>
               <span v-else>🌙</span>
             </button>
-            <a href="tel:+74950000000" :class="['col-span-5 mt-1 text-center sm:col-span-1 sm:mt-0 sm:text-right', classes.mobilePhone]">+7 (495) 000-00-00</a>
           </div>
-          <AppButton variant="primary">Заказать звонок</AppButton>
+          <div :class="classes.mobileContactActions">
+            <a href="tel:+74950000000" :class="classes.mobilePhone" @click="closeMenu">+7 (495) 000-00-00</a>
+            <AppButton variant="primary" class="sm:w-auto">Заказать звонок</AppButton>
+          </div>
         </div>
       </div>
     </Transition>

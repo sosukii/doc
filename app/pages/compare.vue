@@ -2,7 +2,7 @@
   <div class="container mx-auto px-4 py-8 sm:px-6 lg:py-10 xl:px-8">
     <div class="mt-6 flex flex-col gap-4 sm:mt-8 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <h1 class="text-3xl font-heading font-bold sm:text-4xl">Сравнение товаров</h1>
+        <h1 class="sr-only">Сравнение товаров</h1>
         <p v-if="compareStore.items.length" class="mt-2 text-sm text-white/50">
           {{ compareStore.items.length }} {{ productCountLabel }} в списке сравнения
         </p>

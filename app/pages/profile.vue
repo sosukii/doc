@@ -1,6 +1,6 @@
 <template>
   <div class="container mx-auto px-4 py-8 sm:px-6 lg:py-10 xl:px-8">
-    <h1 class="mt-6 text-3xl font-heading font-bold sm:mt-8 sm:text-4xl">Профиль</h1>
+    <h1 class="sr-only">Профиль</h1>
 
     <div class="mt-8 max-w-md mx-auto sm:mt-12">
       <AppCard variant="medium" class="p-5 sm:p-8">

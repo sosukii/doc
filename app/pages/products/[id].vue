@@ -355,7 +355,7 @@ useSeoMeta({
         <div class="flex min-w-0 flex-col gap-6 lg:gap-8">
           <div class="flex flex-col gap-2">
             <div class="text-xs font-bold uppercase tracking-widest text-white/40">{{ getCategoryLabel(product.category) }}</div>
-            <h1 class="text-3xl font-heading font-bold sm:text-4xl lg:text-5xl">{{ product.title }}</h1>
+            <h1 class="text-3xl font-heading font-bold sm:text-4xl lg:text-3xl">{{ product.title }}</h1>
             <div class="mt-2 flex flex-wrap items-center gap-3 sm:gap-4">
               <span class="text-2xl font-bold text-secondary sm:text-3xl">{{ formatPriceRub(product.price) }}</span>
             </div>

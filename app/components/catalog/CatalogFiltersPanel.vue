@@ -74,6 +74,7 @@ const priceToValue = computed({
 })
 const isInStock = ref(true)
 const categoriesExpanded = ref(false)
+const isPriceRangeDragging = ref(false)
 
 watch(priceFromValue, (newValue) => {
   const clampedValue = clampPriceValue(newValue)
@@ -101,13 +102,20 @@ watch(priceToValue, (newValue) => {
   }
 })
 
-const visibleCategories = computed(() => {
-  return categoriesExpanded.value ? categories.value : categories.value.slice(0, 5)
-})
+const primaryCategories = computed(() => categories.value.slice(0, 5))
+const additionalCategories = computed(() => categories.value.slice(5))
 
 const hasMoreCategories = computed(() => {
   return categories.value.length > 5
 })
+
+const startPriceRangeDrag = () => {
+  isPriceRangeDragging.value = true
+}
+
+const stopPriceRangeDrag = () => {
+  isPriceRangeDragging.value = false
+}
 
 const pricePresets = [50000, 100000, 200000, 300000, 500000, 800000, 1000000, 1500000]
 
@@ -123,7 +131,7 @@ const classes = {
   resetButton: 'filter-panel-reset',
   section: 'space-y-4',
   sectionTitle: 'text-sm font-semibold tracking-tight filter-panel-heading',
-  sectionList: 'space-y-3',
+  sectionList: 'space-y-2',
   categoryList: 'space-y-2',
   categoryRow: 'flex items-center gap-2 px-2 py-2 cursor-pointer transition filter-panel-category-row w-full',
   categoryRowActive: 'filter-panel-category-row-active',
@@ -131,12 +139,12 @@ const classes = {
   categoryLabel: 'text-sm filter-panel-heading',
   categoryCount: 'text-xs filter-panel-muted ml-auto',
   expandButton: 'w-full mt-2 px-3 py-2 text-sm font-semibold text-left transition filter-panel-expand-btn',
-  brandRow: 'flex items-center justify-between gap-3 px-2 py-3 cursor-pointer transition filter-panel-brand-row',
+  brandRow: 'flex items-center justify-between gap-3 px-2.5 py-2.5 cursor-pointer transition filter-panel-brand-row',
   brandRowActive: 'filter-panel-brand-row-active',
   brandLabel: 'text-sm font-semibold filter-panel-heading',
   brandAction: 'hidden text-xs filter-panel-muted sm:inline',
   priceSection: 'space-y-3',
-  priceInputs: 'grid grid-cols-2 gap-3',
+  priceInputs: 'grid grid-cols-1 gap-2.5',
   stockRow: 'flex items-center justify-between',
   stockCheckbox: 'flex items-center gap-3',
   stockCount: 'text-sm font-semibold filter-panel-heading',
@@ -189,7 +197,7 @@ const classes = {
       <h3 id="catalog-category-title" :class="classes.sectionTitle">Категории</h3>
       <div :class="classes.categoryList">
         <button
-          v-for="category in visibleCategories"
+          v-for="category in primaryCategories"
           :key="category.slug"
           type="button"
           :class="[
@@ -203,6 +211,28 @@ const classes = {
           <span :class="classes.categoryLabel">{{ category.label }}</span>
           <span :class="classes.categoryCount">{{ category.count ?? 0 }}</span>
         </button>
+        <TransitionGroup
+          v-if="hasMoreCategories"
+          name="filter-category-reveal"
+          tag="div"
+          class="filter-panel-category-extra"
+        >
+          <button
+            v-for="category in categoriesExpanded ? additionalCategories : []"
+            :key="category.slug"
+            type="button"
+            :class="[
+              classes.categoryRow,
+              selectedCategorySlugs.includes(category.slug) && classes.categoryRowActive
+            ]"
+            :aria-pressed="selectedCategorySlugs.includes(category.slug)"
+            @click="$emit('toggleCategory', category.slug)"
+          >
+            <span :class="classes.categoryIcon">{{ getIcon(category) }}</span>
+            <span :class="classes.categoryLabel">{{ category.label }}</span>
+            <span :class="classes.categoryCount">{{ category.count ?? 0 }}</span>
+          </button>
+        </TransitionGroup>
       </div>
       <button
         v-if="hasMoreCategories"
@@ -217,7 +247,10 @@ const classes = {
     <section aria-labelledby="catalog-price-title" :class="classes.section">
       <h3 id="catalog-price-title" :class="classes.sectionTitle">Цена</h3>
       <div :class="classes.priceSection">
-        <div class="range-slider-container">
+        <div
+          class="range-slider-container"
+          :class="{ 'is-dragging': isPriceRangeDragging }"
+        >
           <input
             v-model.number="priceFromValue"
             type="range"
@@ -226,6 +259,10 @@ const classes = {
             step="1000"
             class="range-slider range-slider-from"
             aria-label="Минимальная цена"
+            @pointerdown="startPriceRangeDrag"
+            @pointerup="stopPriceRangeDrag"
+            @pointercancel="stopPriceRangeDrag"
+            @blur="stopPriceRangeDrag"
           >
           <input
             v-model.number="priceToValue"
@@ -235,6 +272,10 @@ const classes = {
             step="1000"
             class="range-slider range-slider-to"
             aria-label="Максимальная цена"
+            @pointerdown="startPriceRangeDrag"
+            @pointerup="stopPriceRangeDrag"
+            @pointercancel="stopPriceRangeDrag"
+            @blur="stopPriceRangeDrag"
           >
           <div class="range-track">
             <div
@@ -357,18 +398,49 @@ const classes = {
   color: rgba(var(--color-text-rgb), 0.55);
 }
 
-.filter-panel-brand-row,
+.filter-panel-brand-row {
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  background: transparent;
+  min-height: 3.45rem;
+  outline: none;
+  transition:
+    background-color 190ms ease-out,
+    border-color 190ms ease-out,
+    box-shadow 190ms ease-out,
+    color 190ms ease-out;
+}
+
 .filter-panel-category-row {
   background: transparent;
   border: none;
 }
 
 .filter-panel-brand-row:hover,
+.filter-panel-brand-row:focus-visible {
+  border-color: rgba(var(--color-border-rgb), 0.18);
+  background: rgba(var(--color-text-rgb), 0.055);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.filter-panel-brand-row:focus-visible {
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.08),
+    0 0 0 3px rgba(var(--color-primary-rgb), 0.2);
+}
+
 .filter-panel-category-row:hover {
   background: transparent;
 }
 
-.filter-panel-brand-row-active,
+.filter-panel-brand-row-active {
+  border-color: rgba(var(--color-primary-rgb), 0.2);
+  background: rgba(var(--color-primary-rgb), 0.075);
+  color: var(--color-primary);
+}
+
 .filter-panel-category-row-active {
   background: transparent;
   color: var(--color-primary);
@@ -386,6 +458,36 @@ const classes = {
 
 .filter-panel-expand-btn:hover {
   background: rgba(var(--color-text-rgb), 0.04);
+}
+
+.filter-panel-category-extra {
+  display: grid;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.filter-category-reveal-enter-active,
+.filter-category-reveal-leave-active {
+  transition:
+    opacity 190ms ease-out,
+    transform 190ms ease-out,
+    max-height 220ms ease-out,
+    margin 220ms ease-out;
+}
+
+.filter-category-reveal-enter-from,
+.filter-category-reveal-leave-to {
+  max-height: 0;
+  margin-top: -0.35rem;
+  opacity: 0;
+  transform: translateY(-0.25rem);
+}
+
+.filter-category-reveal-enter-to,
+.filter-category-reveal-leave-from {
+  max-height: 3rem;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Dual range slider */
@@ -416,6 +518,10 @@ const classes = {
   border-radius: 0.5rem;
   box-shadow: 0 0 18px rgba(var(--color-primary-rgb), 0.22);
   transition: left 180ms ease-out, right 180ms ease-out;
+}
+
+.range-slider-container.is-dragging .range-fill {
+  transition: none;
 }
 
 .range-slider {
@@ -545,11 +651,12 @@ const classes = {
 
 .filter-panel-price-input-left {
   padding-left: 1.7rem;
+  padding-right: 0.9rem;
 }
 
 .filter-panel-price-input-right {
   padding-left: 1.5rem;
-  padding-right: 2.65rem;
+  padding-right: 3rem;
 }
 
 .filter-panel-price-input:focus {

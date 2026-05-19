@@ -733,6 +733,7 @@ useSeoMeta({
 
             <AppPagination
               v-if="totalPages > 1 && products.length"
+              class="catalog-pagination"
               :page="currentPage"
               :total-pages="totalPages"
               @change="handlePageChange"
@@ -851,6 +852,10 @@ useSeoMeta({
 .catalog-results-shell {
   position: relative;
   min-height: clamp(24rem, 54vw, 48rem);
+}
+
+.catalog-pagination {
+  margin-top: clamp(1.75rem, 4vw, 3.5rem);
 }
 
 .catalog-results-overlay {

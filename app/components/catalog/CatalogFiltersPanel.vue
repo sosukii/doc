@@ -401,17 +401,21 @@ const classes = {
   left: 0;
   right: 0;
   height: 0.5rem;
-  background: linear-gradient(90deg, #7c3aed, #ec4899);
+  border: 1px solid rgba(var(--color-border-rgb), 0.16);
+  background: rgba(var(--color-text-rgb), 0.08);
   border-radius: 0.5rem;
   transform: translateY(-50%);
   pointer-events: none;
+  overflow: hidden;
 }
 
 .range-fill {
   position: absolute;
   height: 100%;
-  background: rgba(255, 255, 255, 0.4);
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
   border-radius: 0.5rem;
+  box-shadow: 0 0 18px rgba(var(--color-primary-rgb), 0.22);
+  transition: left 180ms ease-out, right 180ms ease-out;
 }
 
 .range-slider {
@@ -433,30 +437,42 @@ const classes = {
   width: 1.25rem;
   height: 1.25rem;
   border-radius: 50%;
-  border: 2px solid var(--color-bg);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  border: 3px solid var(--range-thumb-color, var(--color-primary));
+  background: #ffffff;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.14),
+    0 0 0 4px rgba(var(--color-primary-rgb), 0.08);
   cursor: pointer;
   pointer-events: all;
-  transition: box-shadow 200ms ease;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
 }
 
 .range-slider::-webkit-slider-thumb:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 7px 18px rgba(0, 0, 0, 0.18),
+    0 0 0 6px rgba(var(--color-primary-rgb), 0.12);
+  transform: scale(1.03);
 }
 
 .range-slider::-moz-range-thumb {
   width: 1.25rem;
   height: 1.25rem;
   border-radius: 50%;
-  border: 2px solid var(--color-bg);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  border: 3px solid var(--range-thumb-color, var(--color-primary));
+  background: #ffffff;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.14),
+    0 0 0 4px rgba(var(--color-primary-rgb), 0.08);
   cursor: pointer;
   pointer-events: all;
-  transition: box-shadow 200ms ease;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
 }
 
 .range-slider::-moz-range-thumb:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 7px 18px rgba(0, 0, 0, 0.18),
+    0 0 0 6px rgba(var(--color-primary-rgb), 0.12);
+  transform: scale(1.03);
 }
 
 .range-slider-from {
@@ -468,19 +484,35 @@ const classes = {
 }
 
 .range-slider-from::-webkit-slider-thumb {
-  background: #7c3aed;
+  --range-thumb-color: var(--color-primary);
 }
 
 .range-slider-to::-webkit-slider-thumb {
-  background: #ec4899;
+  --range-thumb-color: var(--color-accent);
 }
 
 .range-slider-from::-moz-range-thumb {
-  background: #7c3aed;
+  --range-thumb-color: var(--color-primary);
 }
 
 .range-slider-to::-moz-range-thumb {
-  background: #ec4899;
+  --range-thumb-color: var(--color-accent);
+}
+
+.range-slider:focus-visible {
+  outline: none;
+}
+
+.range-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 7px 18px rgba(0, 0, 0, 0.18),
+    0 0 0 7px rgba(var(--color-primary-rgb), 0.18);
+}
+
+.range-slider:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 7px 18px rgba(0, 0, 0, 0.18),
+    0 0 0 7px rgba(var(--color-primary-rgb), 0.18);
 }
 
 /* Price inputs */
@@ -506,7 +538,7 @@ const classes = {
   border-radius: 0.75rem;
   background: rgba(var(--color-text-rgb), 0.04);
   color: var(--color-text);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   min-height: 2.5rem;
   transition: border-color 200ms ease, background 200ms ease;
 }
@@ -517,6 +549,7 @@ const classes = {
 
 .filter-panel-price-input-right {
   padding-left: 1.5rem;
+  padding-right: 2.65rem;
 }
 
 .filter-panel-price-input:focus {

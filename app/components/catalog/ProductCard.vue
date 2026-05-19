@@ -36,10 +36,20 @@ const toggleCart = () => {
 
   cartStore.addToCart(props.product)
 }
+
+const openProductFromCard = (event: MouseEvent) => {
+  const target = event.target
+
+  if (!(target instanceof HTMLElement) || target.closest('a, button')) {
+    return
+  }
+
+  void navigateTo(`/products/${props.product.slug}`)
+}
 </script>
 
 <template>
-  <article class="catalog-product-card group">
+  <article class="catalog-product-card group" @click="openProductFromCard">
     <NuxtLink
       :to="`/products/${product.slug}`"
       class="catalog-product-card__preview"
@@ -89,7 +99,7 @@ const toggleCart = () => {
           :class="['catalog-action-button', 'catalog-action-button--like', { 'is-active': isFavorite }]"
           :aria-pressed="isFavorite"
           :aria-label="isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'"
-          @click="favoritesStore.toggleFavorite(product)"
+          @click.stop="favoritesStore.toggleFavorite(product)"
         >
           <svg aria-hidden="true" class="catalog-action-button__icon" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.08C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -101,7 +111,7 @@ const toggleCart = () => {
           :class="['catalog-action-button', 'catalog-action-button--compare', { 'is-active': isCompared }]"
           :aria-pressed="isCompared"
           :aria-label="isCompared ? 'Убрать из сравнения' : 'Добавить к сравнению'"
-          @click="compareStore.toggleCompare(product)"
+          @click.stop="compareStore.toggleCompare(product)"
         >
           <svg aria-hidden="true" class="catalog-action-button__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21V9m5 12V3m5 18v-7" />
@@ -113,7 +123,7 @@ const toggleCart = () => {
           :class="['catalog-action-button', 'catalog-action-button--cart', { 'is-active': isInCart }]"
           :aria-pressed="isInCart"
           :aria-label="isInCart ? 'Убрать из корзины' : 'Добавить в корзину'"
-          @click="toggleCart"
+          @click.stop="toggleCart"
         >
           <svg aria-hidden="true" class="catalog-action-button__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h9.5l3-7H6.1M7 13l-1 5h12M9 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
@@ -150,9 +160,10 @@ const toggleCart = () => {
     linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.34)),
     rgba(var(--color-surface-rgb), 0.5);
   box-shadow: 0 16px 36px rgba(93, 141, 255, 0.12), 0 24px 64px rgba(72, 96, 168, 0.1);
+  cursor: pointer;
   padding: 0.9rem;
   backdrop-filter: blur(30px);
-  transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+  transition: border-color 220ms ease-out, box-shadow 220ms ease-out, transform 220ms ease-out;
 }
 
 [data-theme='dark'] .catalog-product-card {
@@ -163,8 +174,8 @@ const toggleCart = () => {
 
 .catalog-product-card:hover {
   border-color: rgba(var(--color-primary-rgb), 0.24);
-  box-shadow: 0 18px 42px rgba(93, 141, 255, 0.14), 0 26px 70px rgba(72, 96, 168, 0.12);
-  transform: translateY(-2px);
+  box-shadow: 0 18px 42px rgba(93, 141, 255, 0.13), 0 24px 66px rgba(72, 96, 168, 0.11);
+  transform: translateY(-1px);
 }
 
 .catalog-product-card__preview {
@@ -224,15 +235,15 @@ const toggleCart = () => {
     saturate(1.03)
     brightness(1.01);
   transition:
-    transform 170ms ease,
-    filter 190ms ease;
+    transform 220ms ease-out,
+    filter 220ms ease-out;
 }
 
 .catalog-product-card:hover .catalog-product-card__image {
-  transform: scale(1.03);
+  transform: scale(1.015);
   filter:
-    drop-shadow(0 16px 34px rgba(116, 131, 187, 0.18))
-    saturate(1.06)
+    drop-shadow(0 14px 30px rgba(116, 131, 187, 0.15))
+    saturate(1.035)
     brightness(1.02);
 }
 
@@ -293,14 +304,19 @@ const toggleCart = () => {
   font-size: clamp(0.98rem, 1.5vw, 1.06rem);
   font-weight: 800;
   line-height: 1.18;
-  transition: color 180ms ease;
+  text-decoration-color: transparent;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  transition: color 220ms ease-out, text-decoration-color 220ms ease-out;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
 .catalog-product-card:hover .catalog-product-card__title,
 .catalog-product-card__title:hover {
-  color: rgba(var(--color-primary-rgb), 0.78);
+  color: rgba(var(--color-text-rgb), 0.92);
+  text-decoration-color: rgba(var(--color-primary-rgb), 0.36);
 }
 
 .catalog-product-card__description {
@@ -450,6 +466,16 @@ const toggleCart = () => {
 
   .catalog-product-card__description {
     min-height: 0;
+  }
+}
+
+@media (hover: none) {
+  .catalog-product-card:hover {
+    transform: none;
+  }
+
+  .catalog-product-card:hover .catalog-product-card__image {
+    transform: none;
   }
 }
 </style>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img" aria-labelledby="title desc">
+  <title id="title">Product placeholder</title>
+  <desc id="desc">Abstract Avent product placeholder</desc>
+  <defs>
+    <linearGradient id="bg" x1="120" y1="80" x2="700" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6FBFF"/>
+      <stop offset="0.55" stop-color="#EAF6FF"/>
+      <stop offset="1" stop-color="#EDEBFF"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="230" y1="250" x2="580" y2="570" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4DDFFF"/>
+      <stop offset="1" stop-color="#8A7CFF"/>
+    </linearGradient>
+    <filter id="softShadow" x="160" y="160" width="480" height="480" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="28" stdDeviation="34" flood-color="#4860A8" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect width="800" height="800" rx="72" fill="url(#bg)"/>
+  <circle cx="624" cy="166" r="110" fill="#FFFFFF" opacity="0.72"/>
+  <circle cx="172" cy="628" r="150" fill="#FFFFFF" opacity="0.46"/>
+  <g filter="url(#softShadow)">
+    <rect x="210" y="214" width="380" height="372" rx="54" fill="#FFFFFF" opacity="0.9"/>
+    <path d="M292 490c38-58 75-87 112-87 40 0 70 38 104 38 23 0 44-17 64-50v83c0 24-20 44-44 44H292v-28Z" fill="url(#accent)" opacity="0.82"/>
+    <circle cx="326" cy="314" r="38" fill="url(#accent)" opacity="0.62"/>
+    <rect x="292" y="552" width="216" height="14" rx="7" fill="#A8C0D8" opacity="0.38"/>
+  </g>
+</svg>

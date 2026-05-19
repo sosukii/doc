@@ -5,7 +5,7 @@ import AppPagination from '~/components/ui/AppPagination.vue'
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalog } from '~/composables/useCatalog'
 import { useCatalogMetadata } from '~/composables/useCatalogMetadata'
-import { getProductImageSrc } from '~/utils/productPlaceholder'
+import { getProductImageSrc, isUsableProductImageSrc } from '~/utils/productPlaceholder'
 
 const route = useRoute()
 const router = useRouter()
@@ -195,11 +195,14 @@ watch(requestKey, () => {
   }
 
   shouldShowSkeleton.value = true
-  displayedData.value = {
-    ...defaultProductsResponse(),
-    page: currentPage.value,
-    limit: perPage,
-    totalPages: lastResolvedData.value.totalPages || 1
+
+  if (!displayedData.value.items.length) {
+    displayedData.value = {
+      ...defaultProductsResponse(),
+      page: currentPage.value,
+      limit: perPage,
+      totalPages: lastResolvedData.value.totalPages || 1
+    }
   }
 })
 
@@ -266,18 +269,10 @@ const hasActiveFilters = computed(() => Boolean(
   priceTo.value < 1500000
 ))
 
-const isBrokenLegacyImage = (image?: string): boolean => {
-  if (!image) {
-    return true
-  }
-
-  return /^\/?\d+\.jpe?g$/i.test(image)
-}
-
 const resolveProductImage = (product: Product): string => {
   const image = product.images?.[0]
 
-  if (image && !isBrokenLegacyImage(image)) {
+  if (isUsableProductImageSrc(image)) {
     return optimizeProductCardImageUrl(image)
   }
 
@@ -314,6 +309,7 @@ const availableCount = computed(() => displayedData.value.total || 0)
 const currentPageFullyReady = computed(() => !pending.value && !isRouteFetching.value)
 const canStartBackgroundPrefetch = computed(() => !pending.value && !isRouteFetching.value && firstRenderSettled.value && Boolean(products.value.length))
 const isCatalogLoading = computed(() => pending.value || isRouteFetching.value || shouldShowSkeleton.value)
+const isCatalogOverlayVisible = computed(() => isCatalogLoading.value && products.value.length > 0)
 
 const markProductImageLoaded = (imageSrc: string) => {
   if (!imageSrc || loadedProductImages.value[imageSrc]) {
@@ -716,54 +712,67 @@ useSeoMeta({
             </span>
           </div>
 
-          <div
-            v-if="products.length"
-            class="grid grid-cols-1 gap-4 transition-opacity duration-200 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 min-w-0"
-            :class="isRouteFetching ? 'opacity-90' : 'opacity-100'"
-          >
-            <CatalogProductCard
-              v-for="(product, index) in products"
-              :key="product._id"
-              :product="product"
-              :image-src="resolveProductImage(product)"
-              :category-label="getCategoryLabel(product.category)"
-              :brand-label="product.brand ? getBrandLabel(product.brand) : undefined"
-              :image-loaded="Boolean(loadedProductImages[resolveProductImage(product)])"
-              :eager="index < priorityImageCount"
-              @image-load="markProductImageLoaded"
-            />
-          </div>
-
-          <AppPagination
-            v-if="totalPages > 1"
-            :page="currentPage"
-            :total-pages="totalPages"
-            @change="handlePageChange"
-          />
-
-          <div v-if="isCatalogLoading && !products.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 min-w-0">
-            <CatalogProductCardSkeleton
-              v-for="placeholderIndex in perPage"
-              :key="`placeholder-${placeholderIndex}`"
-            />
-          </div>
-
-          <div v-else-if="error || catalogLoadError" class="py-12 text-center">
-            <p class="text-sm text-white/40">
-              {{ catalogLoadError || 'Не удалось получить товары из API. Проверь доступность бэкенда.' }}
-            </p>
-            <div class="mt-4">
-              <AppButton variant="glass" @click="recoverCatalogDataOnClient">
-                Повторить загрузку
-              </AppButton>
+          <section class="catalog-results-shell" :aria-busy="isCatalogLoading">
+            <div
+              v-if="products.length"
+              class="grid grid-cols-1 gap-4 transition-opacity duration-200 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 min-w-0"
+              :class="isCatalogOverlayVisible ? 'opacity-75' : 'opacity-100'"
+            >
+              <CatalogProductCard
+                v-for="(product, index) in products"
+                :key="product._id"
+                :product="product"
+                :image-src="resolveProductImage(product)"
+                :category-label="getCategoryLabel(product.category)"
+                :brand-label="product.brand ? getBrandLabel(product.brand) : undefined"
+                :image-loaded="Boolean(loadedProductImages[resolveProductImage(product)])"
+                :eager="index < priorityImageCount"
+                @image-load="markProductImageLoaded"
+              />
             </div>
-          </div>
 
-          <div v-else-if="!pending && !products.length" class="py-12 text-center">
-            <p class="text-sm text-white/40">
-              Товары по выбранным фильтрам не найдены.
-            </p>
-          </div>
+            <AppPagination
+              v-if="totalPages > 1 && products.length"
+              :page="currentPage"
+              :total-pages="totalPages"
+              @change="handlePageChange"
+            />
+
+            <div v-if="isCatalogLoading && !products.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 min-w-0">
+              <CatalogProductCardSkeleton
+                v-for="placeholderIndex in perPage"
+                :key="`placeholder-${placeholderIndex}`"
+              />
+            </div>
+
+            <div v-else-if="error || catalogLoadError" class="py-12 text-center">
+              <p class="text-sm text-white/40">
+                {{ catalogLoadError || 'Не удалось получить товары из API. Проверь доступность бэкенда.' }}
+              </p>
+              <div class="mt-4">
+                <AppButton variant="glass" @click="recoverCatalogDataOnClient">
+                  Повторить загрузку
+                </AppButton>
+              </div>
+            </div>
+
+            <div v-else-if="!pending && !products.length" class="py-12 text-center">
+              <p class="text-sm text-white/40">
+                Товары по выбранным фильтрам не найдены.
+              </p>
+            </div>
+
+            <transition name="catalog-results-overlay">
+              <div v-if="isCatalogOverlayVisible" class="catalog-results-overlay" role="status" aria-live="polite">
+                <div class="catalog-results-loader" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <span class="catalog-results-overlay__text">Обновляем подборку...</span>
+              </div>
+            </transition>
+          </section>
         </div>
       </div>
     </div>
@@ -837,3 +846,88 @@ useSeoMeta({
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.catalog-results-shell {
+  position: relative;
+  min-height: clamp(24rem, 54vw, 48rem);
+}
+
+.catalog-results-overlay {
+  position: absolute;
+  inset: -0.75rem;
+  z-index: 20;
+  display: flex;
+  min-height: 12rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  border: 1px solid rgba(var(--color-border-rgb), 0.16);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(var(--color-surface-rgb), 0.62), rgba(var(--color-surface-rgb), 0.34)),
+    rgba(var(--color-bg-rgb, 6, 19, 41), 0.18);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(18px);
+  pointer-events: all;
+}
+
+.catalog-results-overlay__text {
+  color: rgba(var(--color-text-rgb), 0.72);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.catalog-results-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.catalog-results-loader span {
+  display: block;
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-soft));
+  box-shadow: 0 0 18px rgba(var(--color-primary-rgb), 0.34);
+  animation: catalog-loader-pulse 900ms ease-in-out infinite;
+}
+
+.catalog-results-loader span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.catalog-results-loader span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.catalog-results-overlay-enter-active,
+.catalog-results-overlay-leave-active {
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.catalog-results-overlay-enter-from,
+.catalog-results-overlay-leave-to {
+  opacity: 0;
+  transform: scale(0.992);
+}
+
+@keyframes catalog-loader-pulse {
+  0%, 100% {
+    opacity: 0.38;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-0.16rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalog-results-loader span {
+    animation: none;
+  }
+}
+</style>

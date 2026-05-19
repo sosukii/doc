@@ -19,6 +19,9 @@ interface Product {
   isPublished: boolean
   brand?: string
   properties?: Record<string, unknown> | Array<Record<string, unknown>>
+  characteristics?: Record<string, unknown> | Array<Record<string, unknown>>
+  attributes?: Record<string, unknown> | Array<Record<string, unknown>>
+  specs?: Record<string, unknown> | Array<Record<string, unknown>>
   warrantyInformation?: string
   shippingInformation?: string
   availabilityStatus?: string
@@ -164,7 +167,7 @@ const isPlainRecord = (value: unknown): value is Record<string, unknown> => (
 )
 
 const getPropertyKeyFromItem = (item: Record<string, unknown>) => {
-  const key = item.key ?? item.name ?? item.title ?? item.label
+  const key = item.key ?? item.name ?? item.title ?? item.label ?? item.property ?? item.attribute ?? item.code
   return typeof key === 'string' && key.trim() ? key.trim() : ''
 }
 
@@ -176,13 +179,13 @@ const normalizePropertyKey = (key: string) => key
   .replace(/\s+/g, ' ')
   .trim()
 
-const normalizeProperties = (targetProduct: Product) => {
-  if (!targetProduct.properties) {
+const normalizeSpecSource = (source?: Record<string, unknown> | Array<Record<string, unknown>>) => {
+  if (!source) {
     return {}
   }
 
-  if (Array.isArray(targetProduct.properties)) {
-    return targetProduct.properties.reduce<Record<string, unknown>>((properties, item) => {
+  if (Array.isArray(source)) {
+    return source.reduce<Record<string, unknown>>((properties, item) => {
       if (!isPlainRecord(item)) {
         return properties
       }
@@ -198,7 +201,21 @@ const normalizeProperties = (targetProduct: Product) => {
     }, {})
   }
 
-  return targetProduct.properties
+  return source
+}
+
+const normalizeProperties = (targetProduct: Product) => {
+  const specSources = [
+    targetProduct.properties,
+    targetProduct.characteristics,
+    targetProduct.attributes,
+    targetProduct.specs
+  ]
+
+  return specSources.reduce<Record<string, unknown>>((properties, source) => ({
+    ...properties,
+    ...normalizeSpecSource(source)
+  }), {})
 }
 
 const getNormalizedProperties = (targetProduct: Product) => Object.entries(normalizeProperties(targetProduct)).reduce<Record<string, unknown>>((properties, [key, value]) => {
@@ -252,14 +269,29 @@ const isUsableSpecValue = (value: string) => {
 
 const productSpecDefinitions = [
   {
+    key: 'warranty',
+    label: 'Гарантия',
+    aliases: ['Гарантия', 'Warranty']
+  },
+  {
     key: 'inverter',
     label: 'Инвертор',
-    aliases: ['Инвертор']
+    aliases: ['Инвертор (плавная регулировка мощности)', 'Инвертор']
+  },
+  {
+    key: 'indoor-units',
+    label: 'Количество подключаемых внутренних блоков',
+    aliases: [
+      'Кол-во внутр. блоков',
+      'Количество внутренних блоков',
+      'Количество подключаемых внутренних блоков'
+    ]
   },
   {
     key: 'cooling-capacity',
     label: 'Охлаждение, мощность (кВт)',
     aliases: [
+      'Производительность по холоду',
       'Производительность, охлаждение, квт',
       'Производительность охлаждение кВт',
       'Холодопроизводительность',
@@ -274,6 +306,7 @@ const productSpecDefinitions = [
     key: 'heating-capacity',
     label: 'Нагрев, мощность (кВт)',
     aliases: [
+      'Производительность по теплу',
       'Производительность, нагрев, квт',
       'Производительность нагрев кВт',
       'Теплопроизводительность',
@@ -289,17 +322,32 @@ const productSpecDefinitions = [
   {
     key: 'cooling-consumption',
     label: 'Потребляемая мощность в режиме охлаждения (кВт)',
-    aliases: ['Потребляемая мощность в режиме охлаждения, кВт']
+    aliases: [
+      'Потребляемая мощность на охлаждение',
+      'Потребляемая мощность в режиме охлаждения, кВт'
+    ]
   },
   {
     key: 'heating-consumption',
     label: 'Потребляемая мощность в режиме обогрева (кВт)',
-    aliases: ['Потребляемая мощность в режиме обогрева, кВт']
+    aliases: [
+      'Потребляемая мощность на обогрев',
+      'Потребляемая мощность в режиме обогрева, кВт'
+    ]
   },
   {
     key: 'room-area',
-    label: 'Максимальная рекомендуемая площадь помещения (м²)',
-    aliases: ['Максимальная рекомендуемая площадь помещения, м2', 'Максимальная рекомендуемая площадь помещения, м²']
+    label: 'Максимальная рекомендуемая площадь помещения (м2)',
+    aliases: [
+      'Площадь',
+      'Максимальная рекомендуемая площадь помещения, м2',
+      'Максимальная рекомендуемая площадь помещения, м²'
+    ]
+  },
+  {
+    key: 'conditioner-type',
+    label: 'Тип кондиционера',
+    aliases: ['Тип кондиционера']
   }
 ] satisfies Array<{ key: string, label: string, aliases: string[] }>
 
@@ -313,8 +361,19 @@ const findSpecValue = (targetProduct: Product, aliases: string[]) => {
   return isUsableSpecValue(formattedValue) ? formattedValue : ''
 }
 
+const findProductSpecValue = (targetProduct: Product, spec: typeof productSpecDefinitions[number]) => {
+  const propertyValue = findSpecValue(targetProduct, spec.aliases)
+
+  if (propertyValue || spec.key !== 'warranty') {
+    return propertyValue
+  }
+
+  const warrantyValue = formatSpecValue(targetProduct.warrantyInformation)
+  return isUsableSpecValue(warrantyValue) ? warrantyValue : ''
+}
+
 const getProductSpec = (targetProduct: Product, spec: typeof productSpecDefinitions[number]): ProductSpec | null => {
-  const value = findSpecValue(targetProduct, spec.aliases)
+  const value = findProductSpecValue(targetProduct, spec)
 
   return value
     ? {
@@ -500,7 +559,7 @@ useSeoMeta({
         </div>
 
         <div
-          class="grid grid-cols-1 gap-4 rounded-3xl border border-white/5 bg-surface-container-low/30 p-5 sm:grid-cols-2 sm:p-7 lg:grid-cols-1"
+          class="grid grid-cols-1 self-start gap-4 rounded-3xl border border-white/5 bg-surface-container-low/30 p-5 sm:grid-cols-2 sm:p-7 lg:grid-cols-1"
           :class="{ 'lg:max-w-md': !productDescription }"
         >
           <div class="flex flex-col gap-1">
@@ -605,7 +664,7 @@ useSeoMeta({
 .product-spec-row {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 38%);
   align-items: baseline;
   gap: 1rem;
   padding: 0.45rem 0 0.6rem;
@@ -631,6 +690,7 @@ useSeoMeta({
   color: rgba(var(--color-text-rgb), 0.55);
   font-size: 0.86rem;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .product-spec-value {
@@ -640,11 +700,17 @@ useSeoMeta({
   font-weight: 750;
   line-height: 1.35;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 
-@media (min-width: 640px) {
-  .product-spec-group:not(.product-spec-group--paired) .product-spec-row {
-    grid-template-columns: minmax(0, 1fr) max-content;
+@media (max-width: 520px) {
+  .product-spec-row {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
+  .product-spec-value {
+    text-align: left;
   }
 }
 

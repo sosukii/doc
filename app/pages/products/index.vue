@@ -5,6 +5,7 @@ import AppPagination from '~/components/ui/AppPagination.vue'
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalog } from '~/composables/useCatalog'
 import { useCatalogMetadata } from '~/composables/useCatalogMetadata'
+import { getProductImageSrc } from '~/utils/productPlaceholder'
 
 const route = useRoute()
 const router = useRouter()
@@ -29,14 +30,6 @@ const { enqueue, remove, waitForIdleTime } = useBackgroundPrefetchQueue()
 
 const backgroundImagePrefetchCount = 4
 const priorityImageCount = ref(2)
-const fallbackImage = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-  <svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
-    <rect width="600" height="600" fill="#111827"/>
-    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-family="Arial, sans-serif" font-size="30">
-      No image
-    </text>
-  </svg>
-`)
 
 const searchQuery = ref('')
 const debouncedSearchQuery = ref('')
@@ -273,11 +266,27 @@ const hasActiveFilters = computed(() => Boolean(
   priceTo.value < 1500000
 ))
 
-const resolveProductImage = (image?: string) => image ? optimizeProductCardImageUrl(image) : fallbackImage
+const isBrokenLegacyImage = (image?: string): boolean => {
+  if (!image) {
+    return true
+  }
+
+  return /^\/?\d+\.jpe?g$/i.test(image)
+}
+
+const resolveProductImage = (product: Product): string => {
+  const image = product.images?.[0]
+
+  if (image && !isBrokenLegacyImage(image)) {
+    return optimizeProductCardImageUrl(image)
+  }
+
+  return getProductImageSrc(product)
+}
 
 const criticalImageLinks = computed(() => products.value
   .slice(0, priorityImageCount.value)
-  .map((product) => resolveProductImage(product.images?.[0]))
+  .map((product) => resolveProductImage(product))
   .filter((href): href is string => Boolean(href))
   .map((href) => ({
     rel: 'preload' as const,
@@ -716,10 +725,10 @@ useSeoMeta({
               v-for="(product, index) in products"
               :key="product._id"
               :product="product"
-              :image-src="resolveProductImage(product.images?.[0])"
+              :image-src="resolveProductImage(product)"
               :category-label="getCategoryLabel(product.category)"
               :brand-label="product.brand ? getBrandLabel(product.brand) : undefined"
-              :image-loaded="Boolean(loadedProductImages[resolveProductImage(product.images?.[0])])"
+              :image-loaded="Boolean(loadedProductImages[resolveProductImage(product)])"
               :eager="index < priorityImageCount"
               @image-load="markProductImageLoaded"
             />

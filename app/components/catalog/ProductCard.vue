@@ -142,17 +142,17 @@ const toggleCart = () => {
   min-width: 0;
   height: 100%;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 0.95rem;
   overflow: hidden;
-  border: 1px solid rgba(var(--color-border-rgb), 0.18);
+  border: 1px solid rgba(var(--color-border-rgb), 0.16);
   border-radius: 24px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.28)),
-    rgba(var(--color-surface-rgb), 0.48);
-  box-shadow: 0 18px 44px rgba(93, 141, 255, 0.14), 0 28px 80px rgba(72, 96, 168, 0.13);
-  padding: 1rem;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.34)),
+    rgba(var(--color-surface-rgb), 0.5);
+  box-shadow: 0 16px 36px rgba(93, 141, 255, 0.12), 0 24px 64px rgba(72, 96, 168, 0.1);
+  padding: 0.9rem;
   backdrop-filter: blur(30px);
-  transition: border-color 220ms ease, box-shadow 220ms ease;
+  transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
 }
 
 [data-theme='dark'] .catalog-product-card {
@@ -162,29 +162,38 @@ const toggleCart = () => {
 }
 
 .catalog-product-card:hover {
-  border-color: rgba(var(--color-primary-rgb), 0.28);
+  border-color: rgba(var(--color-primary-rgb), 0.24);
+  box-shadow: 0 18px 42px rgba(93, 141, 255, 0.14), 0 26px 70px rgba(72, 96, 168, 0.12);
+  transform: translateY(-2px);
 }
 
 .catalog-product-card__preview {
   position: relative;
   display: flex;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 16 / 11;
   min-height: 0;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid rgba(152, 168, 220, 0.2);
-  border-radius: 18px;
-  background: #ffffff;
-  padding: clamp(1.25rem, 5vw, 2rem);
+  border: 1px solid rgba(152, 168, 220, 0.14);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.95), rgba(246, 248, 255, 0.88) 48%, rgba(236, 242, 255, 0.72)),
+    rgba(255, 255, 255, 0.82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 10px 30px rgba(122, 139, 199, 0.08);
+  padding: clamp(0.8rem, 2.2vw, 1.15rem);
 }
 
 .catalog-product-card__shine {
   position: absolute;
-  inset: 14%;
+  inset: 10%;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.42), transparent 72%);
-  filter: blur(10px);
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.08) 60%, transparent 78%);
+  filter: blur(16px);
+  opacity: 0.9;
 }
 
 .catalog-product-card__image-placeholder {
@@ -201,23 +210,30 @@ const toggleCart = () => {
 
 .catalog-product-card__image-placeholder {
   background:
-    linear-gradient(#ffffff, #ffffff) padding-box,
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(235, 249, 255, 0.36)) border-box;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 255, 0.76)) padding-box,
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(223, 233, 255, 0.34)) border-box;
 }
 
 .catalog-product-card__image {
-  position: absolute;
+  position: relative;
   z-index: 1;
-  width: calc(100% - clamp(2.5rem, 10vw, 4rem));
-  height: calc(100% - clamp(2.5rem, 10vw, 4rem));
-  max-width: 19rem;
-  max-height: 82%;
   object-fit: contain;
-  transition: transform 450ms ease;
+  border-radius: 18px;
+  filter:
+    drop-shadow(0 10px 24px rgba(116, 131, 187, 0.12))
+    saturate(1.03)
+    brightness(1.01);
+  transition:
+    transform 170ms ease,
+    filter 190ms ease;
 }
 
 .catalog-product-card:hover .catalog-product-card__image {
-  transform: scale(1.04);
+  transform: scale(1.03);
+  filter:
+    drop-shadow(0 16px 34px rgba(116, 131, 187, 0.18))
+    saturate(1.06)
+    brightness(1.02);
 }
 
 @keyframes product-image-bg-pulse {
@@ -252,31 +268,31 @@ const toggleCart = () => {
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .catalog-product-card__eyebrow {
   display: flex;
   min-width: 0;
   flex-wrap: wrap;
-  gap: 0.4rem 0.65rem;
-  color: rgba(var(--color-text-rgb), 0.46);
-  font-size: 0.7rem;
+  gap: 0.35rem 0.55rem;
+  color: rgba(var(--color-text-rgb), 0.44);
+  font-size: 0.66rem;
   font-weight: 800;
-  letter-spacing: 0.14em;
-  line-height: 1.4;
+  letter-spacing: 0.13em;
+  line-height: 1.35;
   text-transform: uppercase;
 }
 
 .catalog-product-card__title {
   display: -webkit-box;
-  margin-top: 0.4rem;
+  margin-top: 0.32rem;
   overflow: hidden;
   color: var(--color-text);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.08rem;
+  font-size: clamp(0.98rem, 1.5vw, 1.06rem);
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.18;
   transition: color 180ms ease;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -289,36 +305,36 @@ const toggleCart = () => {
 
 .catalog-product-card__description {
   display: -webkit-box;
-  min-height: 3.75rem;
+  min-height: 2.9rem;
   overflow: hidden;
-  color: rgba(var(--color-text-rgb), 0.66);
-  font-size: 0.9rem;
-  line-height: 1.55;
+  color: rgba(var(--color-text-rgb), 0.62);
+  font-size: 0.86rem;
+  line-height: 1.48;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
 }
 
 .catalog-product-card__footer {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .catalog-product-card__actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
+  gap: 0.55rem;
 }
 
 .catalog-action-button {
   position: relative;
   display: inline-flex;
   min-width: 0;
-  min-height: 2.75rem;
+  min-height: 2.55rem;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--card-inactive-border);
-  border-radius: 14px;
+  border-radius: 13px;
   background: var(--card-inactive-bg);
   color: var(--card-inactive-color);
   cursor: pointer;
@@ -387,8 +403,8 @@ const toggleCart = () => {
 }
 
 .catalog-action-button__icon {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .catalog-action-button:focus-visible {
@@ -420,6 +436,20 @@ const toggleCart = () => {
 
   .catalog-product-card__price {
     font-size: 0.68rem;
+  }
+
+  .catalog-product-card__preview {
+    aspect-ratio: 16 / 10.5;
+    border-radius: 18px;
+    padding: 0.7rem;
+  }
+
+  .catalog-product-card__image {
+    border-radius: 14px;
+  }
+
+  .catalog-product-card__description {
+    min-height: 0;
   }
 }
 </style>

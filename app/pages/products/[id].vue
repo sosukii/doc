@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import AppButton from '~/components/ui/AppButton.vue'
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalogMetadata } from '~/composables/useCatalogMetadata'
+import { useCartStore } from '~/stores/cart'
 import { formatPriceRub } from '~/utils/price'
 import { optimizeProductCardImageUrl, optimizeProductDetailImageUrl } from '~/utils/cloudinaryImages'
 import { getProductImageSources, getProductImageSrc, getProductPlaceholderSrc } from '~/utils/productPlaceholder'
@@ -39,8 +40,14 @@ interface ProductSpec {
   value: string
 }
 
+interface ProductSpecGroup {
+  key: string
+  specs: ProductSpec[]
+}
+
 const route = useRoute()
 const config = useRuntimeConfig()
+const cartStore = useCartStore()
 const { waitForIdleTime } = useBackgroundPrefetchQueue()
 const { getBrandLabel, getCategoryLabel } = useCatalogMetadata()
 const productSlug = computed(() => String(route.params.id || ''))
@@ -113,6 +120,13 @@ const galleryThumbnailImages = computed(() => {
   return getProductImageSources(product.value).map(optimizeProductCardImageUrl)
 })
 
+const productFallbackImage = computed(() => product.value ? getProductPlaceholderSrc(product.value) : '/placeholders/default.svg')
+
+const productDescription = computed(() => {
+  const description = product.value?.description?.replace(/\s+/g, ' ').trim()
+  return description || ''
+})
+
 const relatedProductImage = (relatedProduct: Product) => {
   if (failedRelatedImages.value[relatedProduct._id]) {
     return getProductPlaceholderSrc(relatedProduct)
@@ -129,6 +143,21 @@ const markRelatedImageFailed = (relatedProduct: Product) => {
 }
 
 const activeImage = ref(0)
+
+const isInCart = computed(() => product.value ? cartStore.items.some(item => item.product._id === product.value?._id) : false)
+
+const toggleCart = () => {
+  if (!product.value) {
+    return
+  }
+
+  if (isInCart.value) {
+    cartStore.removeFromCart(product.value._id)
+    return
+  }
+
+  cartStore.addToCart(product.value)
+}
 
 const isPlainRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -171,6 +200,11 @@ const normalizeProperties = (targetProduct: Product) => {
 
   return targetProduct.properties
 }
+
+const getNormalizedProperties = (targetProduct: Product) => Object.entries(normalizeProperties(targetProduct)).reduce<Record<string, unknown>>((properties, [key, value]) => {
+  properties[normalizePropertyKey(key)] = value
+  return properties
+}, {})
 
 const unwrapPropertyValue = (value: unknown): unknown => {
   if (!isPlainRecord(value)) {
@@ -225,12 +259,32 @@ const productSpecDefinitions = [
   {
     key: 'cooling-capacity',
     label: 'Охлаждение, мощность (кВт)',
-    aliases: ['Производительность, охлаждение, квт', 'Производительность охлаждение кВт']
+    aliases: [
+      'Производительность, охлаждение, квт',
+      'Производительность охлаждение кВт',
+      'Холодопроизводительность',
+      'Холодопроизводительность, кВт',
+      'Мощность охлаждения',
+      'Мощность охлаждения, кВт',
+      'Охлаждение',
+      'Cooling capacity'
+    ]
   },
   {
     key: 'heating-capacity',
     label: 'Нагрев, мощность (кВт)',
-    aliases: ['Производительность, нагрев, квт', 'Производительность нагрев кВт']
+    aliases: [
+      'Производительность, нагрев, квт',
+      'Производительность нагрев кВт',
+      'Теплопроизводительность',
+      'Теплопроизводительность, кВт',
+      'Мощность нагрева',
+      'Мощность нагрева, кВт',
+      'Мощность обогрева',
+      'Мощность обогрева, кВт',
+      'Нагрев',
+      'Heating capacity'
+    ]
   },
   {
     key: 'cooling-consumption',
@@ -249,31 +303,76 @@ const productSpecDefinitions = [
   }
 ] satisfies Array<{ key: string, label: string, aliases: string[] }>
 
+const findSpecValue = (targetProduct: Product, aliases: string[]) => {
+  const normalizedProperties = getNormalizedProperties(targetProduct)
+  const matchedValue = aliases
+    .map(alias => normalizedProperties[normalizePropertyKey(alias)])
+    .find(value => value !== undefined && value !== null)
+  const formattedValue = formatSpecValue(matchedValue)
+
+  return isUsableSpecValue(formattedValue) ? formattedValue : ''
+}
+
+const getProductSpec = (targetProduct: Product, spec: typeof productSpecDefinitions[number]): ProductSpec | null => {
+  const value = findSpecValue(targetProduct, spec.aliases)
+
+  return value
+    ? {
+        key: spec.key,
+        label: spec.label,
+        value
+      }
+    : null
+}
+
 const productSpecs = computed<ProductSpec[]>(() => {
   if (!product.value) {
     return []
   }
 
-  const normalizedProperties = Object.entries(normalizeProperties(product.value)).reduce<Record<string, unknown>>((properties, [key, value]) => {
-    properties[normalizePropertyKey(key)] = value
-    return properties
-  }, {})
-
   return productSpecDefinitions
-    .map((spec) => {
-      const matchedValue = spec.aliases
-        .map(alias => normalizedProperties[normalizePropertyKey(alias)])
-        .find(value => value !== undefined && value !== null)
-      const formattedValue = formatSpecValue(matchedValue)
-
-      return {
-        key: spec.key,
-        label: spec.label,
-        value: formattedValue
-      }
-    })
-    .filter(spec => isUsableSpecValue(spec.value))
+    .map(spec => getProductSpec(product.value as Product, spec))
+    .filter((spec): spec is ProductSpec => Boolean(spec))
 })
+
+const groupedProductSpecs = computed<ProductSpecGroup[]>(() => {
+  const specByKey = Object.fromEntries(productSpecs.value.map(spec => [spec.key, spec]))
+  const groups: ProductSpecGroup[] = []
+  const usedKeys = new Set<string>()
+
+  const addPair = (key: string, specKeys: string[]) => {
+    const specs = specKeys.map(specKey => specByKey[specKey]).filter((spec): spec is ProductSpec => Boolean(spec))
+
+    if (specs.length === specKeys.length) {
+      groups.push({ key, specs })
+      specKeys.forEach(specKey => usedKeys.add(specKey))
+    }
+  }
+
+  addPair('capacity', ['cooling-capacity', 'heating-capacity'])
+  addPair('consumption', ['cooling-consumption', 'heating-consumption'])
+
+  productSpecs.value
+    .filter(spec => !usedKeys.has(spec.key))
+    .forEach(spec => groups.push({ key: spec.key, specs: [spec] }))
+
+  return groups
+})
+
+const relatedSpecDefinitions = {
+  cooling: productSpecDefinitions.find(spec => spec.key === 'cooling-capacity'),
+  heating: productSpecDefinitions.find(spec => spec.key === 'heating-capacity')
+} as const
+
+const relatedProductPowerSpecs = (relatedProduct: Product) => ({
+  cooling: relatedSpecDefinitions.cooling ? findSpecValue(relatedProduct, relatedSpecDefinitions.cooling.aliases) : '',
+  heating: relatedSpecDefinitions.heating ? findSpecValue(relatedProduct, relatedSpecDefinitions.heating.aliases) : ''
+})
+
+const relatedProductCards = computed(() => relatedProducts.value.map((relatedProduct) => ({
+  product: relatedProduct,
+  power: relatedProductPowerSpecs(relatedProduct)
+})))
 
 watch(productSlug, () => {
   activeImage.value = 0
@@ -304,10 +403,10 @@ onMounted(async () => {
 
 useSeoMeta({
   title: () => product.value ? `${product.value.title} - Avent` : 'Товар - Avent',
-  description: () => product.value?.description || 'Описание товара Avent',
+  description: () => productDescription.value || 'Описание товара Avent',
   ogTitle: () => product.value ? `${product.value.title} - Avent` : 'Товар - Avent',
-  ogDescription: () => product.value?.description || 'Описание товара Avent',
-  ogImage: () => galleryImages.value[0] || (product.value ? getProductPlaceholderSrc(product.value) : '/placeholders/default.svg'),
+  ogDescription: () => productDescription.value || 'Описание товара Avent',
+  ogImage: () => galleryImages.value[0] || productFallbackImage.value,
 })
 </script>
 
@@ -318,12 +417,12 @@ useSeoMeta({
         <div class="flex flex-col gap-6">
           <div class="glass-panel flex aspect-square items-center justify-center overflow-hidden rounded-3xl border-white/5 bg-white/5 p-3 sm:p-4">
             <NuxtImg
-              :src="galleryImages[activeImage] || fallbackImage"
+              :src="galleryImages[activeImage] || productFallbackImage"
               :alt="product.title"
               width="900"
               height="900"
               sizes="(min-width: 1024px) 46vw, 92vw"
-              class="max-h-full max-w-full object-contain transition-all duration-500 hover:scale-105"
+              class="max-h-full max-w-full object-contain transition-transform duration-200 ease-out hover:scale-[1.015]"
               loading="eager"
               fetchpriority="high"
             />
@@ -339,7 +438,7 @@ useSeoMeta({
               @click="activeImage = index"
             >
               <NuxtImg
-                :src="galleryThumbnailImages[index] || fallbackImage"
+                :src="galleryThumbnailImages[index] || productFallbackImage"
                 :alt="product.title"
                 width="200"
                 height="200"
@@ -356,33 +455,54 @@ useSeoMeta({
           <div class="flex flex-col gap-2">
             <div class="text-xs font-bold uppercase tracking-widest text-white/40">{{ getCategoryLabel(product.category) }}</div>
             <h1 class="text-3xl font-heading font-bold sm:text-4xl lg:text-3xl">{{ product.title }}</h1>
-            <div class="mt-2 flex flex-wrap items-center gap-3 sm:gap-4">
+            <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <span class="text-2xl font-bold text-secondary sm:text-3xl">{{ formatPriceRub(product.price) }}</span>
+              <AppButton
+                variant="primary"
+                class="w-full px-6 py-3 text-sm sm:w-auto"
+                :aria-label="isInCart ? 'Убрать товар из корзины' : 'Добавить товар в корзину'"
+                @click="toggleCart"
+              >
+                {{ isInCart ? 'В корзине' : 'В корзину' }}
+              </AppButton>
             </div>
           </div>
 
-          <div v-if="productSpecs.length" class="rounded-2xl border border-white/5 bg-surface-container-low/30 p-4 sm:p-5">
-            <dl class="divide-y divide-white/10">
+          <div v-if="groupedProductSpecs.length" class="rounded-2xl border border-white/5 bg-surface-container-low/30 p-4 sm:p-5">
+            <dl class="product-spec-list">
               <div
-                v-for="spec in productSpecs"
-                :key="spec.key"
-                class="grid gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_minmax(7rem,0.7fr)] sm:gap-4"
+                v-for="group in groupedProductSpecs"
+                :key="group.key"
+                class="product-spec-group"
+                :class="{ 'product-spec-group--paired': group.specs.length > 1 }"
               >
-                <dt class="text-sm leading-snug text-white/55">{{ spec.label }}</dt>
-                <dd class="text-sm font-semibold leading-snug text-white/90 sm:text-right">{{ spec.value }}</dd>
+                <div
+                  v-for="spec in group.specs"
+                  :key="spec.key"
+                  class="product-spec-row"
+                >
+                  <dt class="product-spec-label">{{ spec.label }}</dt>
+                  <dd class="product-spec-value">{{ spec.value }}</dd>
+                </div>
               </div>
             </dl>
           </div>
         </div>
       </div>
 
-      <section class="mt-12 grid gap-6 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.45fr)] lg:gap-8" aria-labelledby="product-description-title">
-        <div class="rounded-3xl border border-white/5 bg-surface-container-low/30 p-5 sm:p-7">
+      <section
+        class="mt-12 grid gap-6 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.45fr)] lg:gap-8"
+        :aria-labelledby="productDescription ? 'product-description-title' : undefined"
+      >
+        <div v-if="productDescription" class="rounded-3xl border border-white/5 bg-surface-container-low/30 p-5 sm:p-7">
           <h2 id="product-description-title" class="text-xl font-heading font-semibold text-white/90 sm:text-2xl">Описание</h2>
-          <p class="mt-4 leading-relaxed text-white/60">{{ product.description }}</p>
+          <p class="mt-4 max-w-4xl leading-relaxed text-white/60">{{ productDescription }}</p>
         </div>
 
-        <div class="grid grid-cols-1 gap-4 rounded-3xl border border-white/5 bg-surface-container-low/30 p-5 sm:grid-cols-2 sm:p-7 lg:grid-cols-1">
+        <div
+          class="grid grid-cols-1 gap-4 rounded-3xl border border-white/5 bg-surface-container-low/30 p-5 sm:grid-cols-2 sm:p-7 lg:grid-cols-1"
+          :class="{ 'lg:max-w-md': !productDescription }"
+        >
           <div class="flex flex-col gap-1">
             <span class="text-xs uppercase tracking-tighter text-white/40">Бренд</span>
             <span class="text-sm font-medium">{{ product.brand ? getBrandLabel(product.brand) : 'Avent' }}</span>
@@ -405,7 +525,6 @@ useSeoMeta({
             </span>
           </div>
           <div class="mt-2 flex flex-col gap-3 sm:col-span-2 sm:flex-row lg:col-span-1 lg:flex-col">
-            <AppButton variant="primary" class="flex-grow py-4 text-lg">В корзину</AppButton>
             <AppButton variant="glass" class="px-10">Купить в один клик</AppButton>
           </div>
         </div>
@@ -414,32 +533,39 @@ useSeoMeta({
       <section class="mt-16 sm:mt-20 lg:mt-24" aria-labelledby="related-products-title">
         <h2 id="related-products-title" class="mb-5 text-xl font-heading font-bold sm:mb-6 sm:text-2xl">Похожие товары</h2>
         <div
-          v-if="relatedProducts.length"
+          v-if="relatedProductCards.length"
           class="related-products-grid"
         >
           <NuxtLink
-            v-for="item in relatedProducts"
-            :key="item._id"
-            :to="`/products/${item.slug}`"
+            v-for="item in relatedProductCards"
+            :key="item.product._id"
+            :to="`/products/${item.product.slug}`"
             class="related-product-card group"
             prefetch-on="interaction"
           >
             <div class="related-product-card__media">
               <NuxtImg
-                :src="relatedProductImage(item)"
-                :alt="item.title"
+                :src="relatedProductImage(item.product)"
+                :alt="item.product.title"
                 width="240"
                 height="240"
                 sizes="(min-width: 1280px) 120px, (min-width: 640px) 22vw, 34vw"
                 class="related-product-card__image"
                 loading="lazy"
                 fetchpriority="low"
-                @error="markRelatedImageFailed(item)"
+                @error="markRelatedImageFailed(item.product)"
               />
             </div>
             <div class="related-product-card__content">
-              <h3 class="related-product-card__title">{{ item.title }}</h3>
-              <span class="related-product-card__price">{{ formatPriceRub(item.price) }}</span>
+              <h3 class="related-product-card__title">{{ item.product.title }}</h3>
+              <div
+                v-if="item.power.cooling || item.power.heating"
+                class="related-product-card__specs"
+              >
+                <span v-if="item.power.cooling">Холод: {{ item.power.cooling }}</span>
+                <span v-if="item.power.heating">Тепло: {{ item.power.heating }}</span>
+              </div>
+              <span class="related-product-card__price">{{ formatPriceRub(item.product.price) }}</span>
             </div>
           </NuxtLink>
         </div>
@@ -455,32 +581,99 @@ useSeoMeta({
 </template>
 
 <style scoped>
+.product-spec-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.product-spec-group {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.product-spec-group:last-child {
+  padding-bottom: 0;
+}
+
+.product-spec-group--paired {
+  border: 1px solid rgba(var(--color-border-rgb), 0.12);
+  border-radius: 16px;
+  background: rgba(var(--color-text-rgb), 0.035);
+  padding: 0.75rem;
+}
+
+.product-spec-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.45rem 0 0.6rem;
+}
+
+.product-spec-row::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(var(--color-border-rgb), 0.06), rgba(var(--color-border-rgb), 0.2), rgba(var(--color-border-rgb), 0.06));
+  content: '';
+}
+
+.product-spec-group:last-child .product-spec-row:last-child::after,
+.product-spec-group--paired .product-spec-row:last-child::after {
+  opacity: 0;
+}
+
+.product-spec-label {
+  min-width: 0;
+  color: rgba(var(--color-text-rgb), 0.55);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.product-spec-value {
+  min-width: 0;
+  color: rgba(var(--color-text-rgb), 0.92);
+  font-size: 0.92rem;
+  font-weight: 750;
+  line-height: 1.35;
+  text-align: right;
+}
+
+@media (min-width: 640px) {
+  .product-spec-group:not(.product-spec-group--paired) .product-spec-row {
+    grid-template-columns: minmax(0, 1fr) max-content;
+  }
+}
+
 .related-products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr));
-  gap: clamp(0.75rem, 1.4vw, 1rem);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+  gap: clamp(0.9rem, 1.6vw, 1.25rem);
 }
 
 @media (min-width: 1280px) {
   .related-products-grid {
-    grid-template-columns: repeat(4, minmax(0, 11.5rem));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 .related-product-card {
   display: grid;
-  grid-template-columns: 4.9rem minmax(0, 1fr);
+  grid-template-columns: minmax(7.5rem, 10rem) minmax(0, 1fr);
   min-width: 0;
-  align-items: center;
-  gap: 0.75rem;
+  align-items: stretch;
+  gap: clamp(0.8rem, 1.7vw, 1.2rem);
   border: 1px solid rgba(var(--color-border-rgb), 0.12);
-  border-radius: 18px;
+  border-radius: 20px;
   background:
     linear-gradient(135deg, rgba(var(--color-surface-rgb), 0.42), rgba(var(--color-surface-rgb), 0.2)),
     rgba(var(--color-surface-rgb), 0.2);
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.08);
   cursor: pointer;
-  padding: 0.65rem;
+  padding: clamp(0.75rem, 1.4vw, 1rem);
   text-decoration: none;
   transition: border-color 220ms ease-out, box-shadow 220ms ease-out, background 220ms ease-out;
 }
@@ -506,11 +699,11 @@ useSeoMeta({
   justify-content: center;
   overflow: hidden;
   border: 1px solid rgba(var(--color-border-rgb), 0.1);
-  border-radius: 14px;
+  border-radius: 16px;
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.72), rgba(var(--color-surface-rgb), 0.16)),
     rgba(255, 255, 255, 0.05);
-  padding: 0.45rem;
+  padding: clamp(0.6rem, 1.4vw, 0.9rem);
 }
 
 .related-product-card__image {
@@ -530,24 +723,20 @@ useSeoMeta({
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.55rem;
 }
 
 .related-product-card__title {
-  display: -webkit-box;
-  overflow: hidden;
   color: rgba(var(--color-text-rgb), 0.88);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.82rem;
-  font-weight: 700;
-  line-height: 1.22;
+  font-size: clamp(0.95rem, 1.3vw, 1.08rem);
+  font-weight: 750;
+  line-height: 1.25;
   text-decoration-color: transparent;
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.18em;
   transition: color 220ms ease-out, text-decoration-color 220ms ease-out;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .related-product-card:hover .related-product-card__title {
@@ -555,11 +744,23 @@ useSeoMeta({
   text-decoration-color: rgba(var(--color-primary-rgb), 0.34);
 }
 
-.related-product-card__price {
-  color: var(--color-primary-soft);
+.related-product-card__specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.65rem;
+  color: rgba(var(--color-text-rgb), 0.62);
   font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.related-product-card__price {
+  margin-top: auto;
+  color: var(--color-primary-soft);
+  font-size: 0.95rem;
   font-weight: 800;
   line-height: 1.2;
+  text-align: right;
   white-space: nowrap;
 }
 
@@ -569,7 +770,7 @@ useSeoMeta({
   }
 
   .related-product-card {
-    grid-template-columns: 4.5rem minmax(0, 1fr);
+    grid-template-columns: minmax(6.5rem, 7.5rem) minmax(0, 1fr);
   }
 }
 

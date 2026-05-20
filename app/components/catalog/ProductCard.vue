@@ -3,7 +3,7 @@ import AppButton from '~/components/ui/AppButton.vue'
 import { useCartStore } from '~/stores/cart'
 import { useFavoritesStore } from '~/stores/favorites'
 import { useCompareStore } from '~/stores/compare'
-import { formatPrice } from '~/utils/price'
+import { formatPrice, isPriceAvailable } from '~/utils/price'
 import type { Product } from '~/composables/useCatalog'
 
 const props = defineProps<{
@@ -27,8 +27,15 @@ const isFavorite = computed(() => favoritesStore.isFavorite(props.product._id))
 const isCompared = computed(() => compareStore.isInCompare(props.product._id))
 const cartItem = computed(() => cartStore.items.find(item => item.product._id === props.product._id))
 const isInCart = computed(() => Boolean(cartItem.value))
+const hasProductPrice = computed(() => isPriceAvailable(props.product.price))
+const { openPriceRequest } = usePriceRequest()
 
 const toggleCart = () => {
+  if (!hasProductPrice.value) {
+    openPriceRequest(props.product)
+    return
+  }
+
   if (isInCart.value) {
     cartStore.removeFromCart(props.product._id)
     return
@@ -121,8 +128,8 @@ const openProductFromCard = (event: MouseEvent) => {
         <button
           type="button"
           :class="['catalog-action-button', 'catalog-action-button--cart', { 'is-active': isInCart }]"
-          :aria-pressed="isInCart"
-          :aria-label="isInCart ? 'Убрать из корзины' : 'Добавить в корзину'"
+          :aria-pressed="hasProductPrice ? isInCart : false"
+          :aria-label="hasProductPrice ? (isInCart ? 'Убрать из корзины' : 'Добавить в корзину') : 'Получить цену'"
           @click.stop="toggleCart"
         >
           <svg aria-hidden="true" class="catalog-action-button__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,8 +138,17 @@ const openProductFromCard = (event: MouseEvent) => {
         </button>
       </div>
 
-      <AppButton variant="primary" :to="`/products/${product.slug}`" class="catalog-product-card__details">
+      <AppButton v-if="hasProductPrice" variant="primary" :to="`/products/${product.slug}`" class="catalog-product-card__details">
         Подробнее
+      </AppButton>
+      <AppButton
+        v-else
+        variant="primary"
+        class="catalog-product-card__details"
+        aria-label="Получить цену товара"
+        @click.stop="openPriceRequest(product)"
+      >
+        Получить цену
       </AppButton>
     </div>
   </article>

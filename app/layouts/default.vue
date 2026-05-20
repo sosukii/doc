@@ -81,6 +81,7 @@ onBeforeUnmount(() => {
     </main>
 
     <AppFooter />
+    <PriceRequestModal />
 
     <!-- Ambient Glow Backgrounds -->
     <div class="absolute top-0 right-0 w-[200px] h-[200px] sm:w-[300px] sm:h-[300px] lg:w-[500px] lg:h-[500px] bg-primary/20 rounded-full blur-[60px] sm:blur-[100px] lg:blur-[120px] pointer-events-none -z-10 animate-pulse"/>

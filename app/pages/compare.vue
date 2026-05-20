@@ -127,9 +127,9 @@
                 <AppButton
                   variant="secondary"
                   class="w-full px-3 py-2 text-sm"
-                  @click="cartStore.addToCart(product)"
+                  @click="handleCompareProductAction(product)"
                 >
-                  В корзину
+                  {{ isPriceAvailable(product.price) ? 'В корзину' : 'Получить цену' }}
                 </AppButton>
               </div>
             </td>
@@ -146,11 +146,12 @@ import { computed, ref } from 'vue'
 import AppButton from '~/components/ui/AppButton.vue'
 import { useCompareStore } from '~/stores/compare'
 import { useCartStore } from '~/stores/cart'
-import { formatPrice } from '~/utils/price'
+import { formatPrice, isPriceAvailable } from '~/utils/price'
 import type { Product } from '~/composables/useCatalog'
 
 const compareStore = useCompareStore()
 const cartStore = useCartStore()
+const { openPriceRequest } = usePriceRequest()
 
 type ComparisonViewMode = 'all' | 'different'
 type ProductProperties = Record<string, unknown>
@@ -167,6 +168,15 @@ const comparisonViewOptions: Array<{ label: string, value: ComparisonViewMode }>
   { label: 'Все характеристики', value: 'all' },
   { label: 'Только отличия', value: 'different' }
 ]
+
+const handleCompareProductAction = (product: Product) => {
+  if (!isPriceAvailable(product.price)) {
+    openPriceRequest(product)
+    return
+  }
+
+  cartStore.addToCart(product)
+}
 
 const productCountLabel = computed(() => {
   const count = compareStore.items.length

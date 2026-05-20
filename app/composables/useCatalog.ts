@@ -1,14 +1,16 @@
 import { optimizeProductCardImageUrl } from '~/utils/cloudinaryImages'
 
-interface Product {
+export interface Product {
   _id: string
   title: string
   slug: string
   description: string
-  price: number
+  price: number | null
   images: string[]
   category: string
   brand?: string
+  sku?: string
+  model?: string
   properties?: Record<string, unknown> | Array<Record<string, unknown>>
   availabilityStatus?: string
   warrantyInformation?: string

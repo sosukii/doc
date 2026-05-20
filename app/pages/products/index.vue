@@ -300,7 +300,8 @@ const categories = computed(() =>
       slug: category.slug,
       label: getCategoryLabel(category.slug),
       count: category.count,
-      icon: category.icon
+      icon: category.icon,
+      status: category.status
     }))
 )
 
@@ -635,7 +636,7 @@ useSeoMeta({
 <template>
   <div class="py-8 sm:py-10 lg:py-12">
     <div class="container mx-auto px-4 sm:px-6 xl:px-8">
-      <div class="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-8 xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-10">
+      <div class="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-8 xl:grid-cols-[320px_minmax(0,1fr)] xl:gap-10">
         <aside class="hidden space-y-6 lg:block">
           <CatalogFiltersPanel
             class="sticky top-28"

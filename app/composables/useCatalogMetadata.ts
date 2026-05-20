@@ -1,13 +1,13 @@
 const catalogCategories = [
-  { slug: 'air-conditioners', label: 'Кондиционеры', count: 1243, icon: '❄️', aliases: ['conditioners', 'air-conditioners', 'air conditioners', 'кондиционеры'] },
-  { slug: 'ventilation', label: 'Вентиляция', count: 632, icon: '💨', aliases: ['ventilation', 'вентиляция'] },
-  { slug: 'heaters', label: 'Нагреватели', count: 814, icon: '🔥', aliases: ['heaters', 'нагреватели'] },
-  { slug: 'coolers', label: 'Охладители', count: 421, icon: '🧊', aliases: ['coolers', 'охладители'] },
-  { slug: 'heat-pumps', label: 'Тепловые насосы', count: 598, icon: '♨️', aliases: ['heat-pumps', 'heat pumps', 'тепловые насосы'] },
-  { slug: 'humidifiers', label: 'Увлажнители', count: 290, icon: '💧', aliases: ['humidifiers', 'увлажнители'] },
-  { slug: 'chillers-fancoils', label: 'Чиллеры, фанкойлы', count: 157, icon: '🧊', aliases: ['chillers-fancoils', 'chillers, fancoils', 'чиллеры, фанкойлы', 'fan coils', 'fancoils'] },
-  { slug: 'silencers', label: 'Шумоглушители', count: 118, icon: '🔇', aliases: ['silencers', 'шумоглушители'] },
-  { slug: 'parts-accessories', label: 'Запчасти и аксессуары', count: 232, icon: '🧩', aliases: ['parts-accessories', 'parts and accessories', 'запчасти и аксессуары'] }
+  { slug: 'air-conditioners', label: 'Кондиционеры', count: 1243, icon: '❄️', status: 'active', aliases: ['conditioners', 'air-conditioners', 'air conditioners', 'кондиционеры'] },
+  { slug: 'ventilation', label: 'Вентиляция', icon: '💨', status: 'future', aliases: ['ventilation', 'вентиляция'] },
+  { slug: 'heaters', label: 'Нагреватели', icon: '🔥', status: 'future', aliases: ['heaters', 'нагреватели'] },
+  { slug: 'coolers', label: 'Охладители', icon: '🧊', status: 'future', aliases: ['coolers', 'охладители'] },
+  { slug: 'heat-pumps', label: 'Тепловые насосы', icon: '♨️', status: 'future', aliases: ['heat-pumps', 'heat pumps', 'тепловые насосы'] },
+  { slug: 'humidifiers', label: 'Увлажнители', icon: '💧', status: 'future', aliases: ['humidifiers', 'увлажнители'] },
+  { slug: 'chillers-fancoils', label: 'Чиллеры, фанкойлы', icon: '🧊', status: 'future', aliases: ['chillers-fancoils', 'chillers, fancoils', 'чиллеры, фанкойлы', 'fan coils', 'fancoils'] },
+  { slug: 'silencers', label: 'Шумоглушители', icon: '🔇', status: 'future', aliases: ['silencers', 'шумоглушители'] },
+  { slug: 'parts-accessories', label: 'Запчасти и аксессуары', icon: '🧩', status: 'future', aliases: ['parts-accessories', 'parts and accessories', 'запчасти и аксессуары'] }
 ] as const
 
 const catalogBrands = [

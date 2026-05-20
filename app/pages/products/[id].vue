@@ -4,7 +4,7 @@ import AppButton from '~/components/ui/AppButton.vue'
 import { useBackgroundPrefetchQueue } from '~/composables/useBackgroundPrefetchQueue'
 import { useCatalogMetadata } from '~/composables/useCatalogMetadata'
 import { useCartStore } from '~/stores/cart'
-import { formatPriceRub } from '~/utils/price'
+import { formatPriceRub, isPriceAvailable } from '~/utils/price'
 import { optimizeProductCardImageUrl, optimizeProductDetailImageUrl } from '~/utils/cloudinaryImages'
 import { getProductImageSources, getProductImageSrc, getProductPlaceholderSrc } from '~/utils/productPlaceholder'
 
@@ -13,11 +13,13 @@ interface Product {
   title: string
   slug: string
   description: string
-  price: number
+  price: number | null
   images: string[]
   category: string
   isPublished: boolean
   brand?: string
+  sku?: string
+  model?: string
   properties?: Record<string, unknown> | Array<Record<string, unknown>>
   characteristics?: Record<string, unknown> | Array<Record<string, unknown>>
   attributes?: Record<string, unknown> | Array<Record<string, unknown>>
@@ -51,6 +53,7 @@ interface ProductSpecGroup {
 const route = useRoute()
 const config = useRuntimeConfig()
 const cartStore = useCartStore()
+const { openPriceRequest } = usePriceRequest()
 const { waitForIdleTime } = useBackgroundPrefetchQueue()
 const { getBrandLabel, getCategoryLabel } = useCatalogMetadata()
 const productSlug = computed(() => String(route.params.id || ''))
@@ -148,9 +151,15 @@ const markRelatedImageFailed = (relatedProduct: Product) => {
 const activeImage = ref(0)
 
 const isInCart = computed(() => product.value ? cartStore.items.some(item => item.product._id === product.value?._id) : false)
+const hasProductPrice = computed(() => isPriceAvailable(product.value?.price))
 
 const toggleCart = () => {
   if (!product.value) {
+    return
+  }
+
+  if (!hasProductPrice.value) {
+    openPriceRequest(product.value)
     return
   }
 
@@ -517,12 +526,12 @@ useSeoMeta({
             <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <span class="text-2xl font-bold text-secondary sm:text-3xl">{{ formatPriceRub(product.price) }}</span>
               <AppButton
-                variant="primary"
+                :variant="hasProductPrice ? 'primary' : 'secondary'"
                 class="w-full px-6 py-3 text-sm sm:w-auto"
-                :aria-label="isInCart ? 'Убрать товар из корзины' : 'Добавить товар в корзину'"
+                :aria-label="hasProductPrice ? (isInCart ? 'Убрать товар из корзины' : 'Добавить товар в корзину') : 'Получить цену товара'"
                 @click="toggleCart"
               >
-                {{ isInCart ? 'В корзине' : 'В корзину' }}
+                {{ hasProductPrice ? (isInCart ? 'В корзине' : 'В корзину') : 'Получить цену' }}
               </AppButton>
             </div>
           </div>
@@ -584,7 +593,13 @@ useSeoMeta({
             </span>
           </div>
           <div class="mt-2 flex flex-col gap-3 sm:col-span-2 sm:flex-row lg:col-span-1 lg:flex-col">
-            <AppButton variant="glass" class="px-10">Купить в один клик</AppButton>
+            <AppButton
+              variant="glass"
+              class="px-10"
+              @click="hasProductPrice ? undefined : openPriceRequest(product)"
+            >
+              {{ hasProductPrice ? 'Купить в один клик' : 'Получить цену' }}
+            </AppButton>
           </div>
         </div>
       </section>

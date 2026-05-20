@@ -12,6 +12,7 @@ interface CategoryOption {
   label: string
   count?: number
   icon?: string
+  status?: 'active' | 'future'
 }
 
 interface Props {
@@ -73,7 +74,7 @@ const priceToValue = computed({
   set: (value) => emit('update:priceTo', clampPriceValue(value))
 })
 const isInStock = ref(true)
-const categoriesExpanded = ref(false)
+const futureCategoriesExpanded = ref(false)
 const isPriceRangeDragging = ref(false)
 
 watch(priceFromValue, (newValue) => {
@@ -102,12 +103,9 @@ watch(priceToValue, (newValue) => {
   }
 })
 
-const primaryCategories = computed(() => categories.value.slice(0, 5))
-const additionalCategories = computed(() => categories.value.slice(5))
-
-const hasMoreCategories = computed(() => {
-  return categories.value.length > 5
-})
+const activeCategories = computed(() => categories.value.filter(category => category.status !== 'future'))
+const futureCategories = computed(() => categories.value.filter(category => category.status === 'future'))
+const hasFutureCategories = computed(() => futureCategories.value.length > 0)
 
 const startPriceRangeDrag = () => {
   isPriceRangeDragging.value = true
@@ -134,10 +132,12 @@ const classes = {
   sectionList: 'space-y-2',
   categoryList: 'space-y-2',
   categoryRow: 'flex items-center gap-2 px-2 py-2 cursor-pointer transition filter-panel-category-row w-full',
+  futureCategoryRow: 'flex items-center gap-2 px-2 py-2 filter-panel-category-row filter-panel-category-row-future w-full',
   categoryRowActive: 'filter-panel-category-row-active',
   categoryIcon: 'text-base shrink-0',
   categoryLabel: 'text-sm filter-panel-heading',
   categoryCount: 'text-xs filter-panel-muted ml-auto',
+  categorySoonBadge: 'filter-panel-category-soon ml-auto',
   expandButton: 'w-full mt-2 px-3 py-2 text-sm font-semibold text-left transition filter-panel-expand-btn',
   brandRow: 'flex items-center justify-between gap-3 px-2.5 py-2.5 cursor-pointer transition filter-panel-brand-row',
   brandRowActive: 'filter-panel-brand-row-active',
@@ -197,7 +197,7 @@ const classes = {
       <h3 id="catalog-category-title" :class="classes.sectionTitle">Категории</h3>
       <div :class="classes.categoryList">
         <button
-          v-for="category in primaryCategories"
+          v-for="category in activeCategories"
           :key="category.slug"
           type="button"
           :class="[
@@ -209,39 +209,37 @@ const classes = {
         >
           <span :class="classes.categoryIcon">{{ getIcon(category) }}</span>
           <span :class="classes.categoryLabel">{{ category.label }}</span>
-          <span :class="classes.categoryCount">{{ category.count ?? 0 }}</span>
+          <span v-if="category.count !== undefined" :class="classes.categoryCount">{{ category.count }}</span>
         </button>
-        <TransitionGroup
-          v-if="hasMoreCategories"
-          name="filter-category-reveal"
-          tag="div"
+      </div>
+      <button
+        v-if="hasFutureCategories"
+        type="button"
+        :class="classes.expandButton"
+        :aria-expanded="futureCategoriesExpanded"
+        @click="futureCategoriesExpanded = !futureCategoriesExpanded"
+      >
+        <span class="filter-panel-expand-btn__label">
+          <span>Добавим до конца июля 🐝</span>
+        </span>
+        <span class="filter-panel-expand-btn__chevron" :class="{ 'is-open': futureCategoriesExpanded }">⌄</span>
+      </button>
+      <Transition name="filter-category-reveal">
+        <div
+          v-if="hasFutureCategories && futureCategoriesExpanded"
           class="filter-panel-category-extra"
         >
-          <button
-            v-for="category in categoriesExpanded ? additionalCategories : []"
+          <div
+            v-for="category in futureCategories"
             :key="category.slug"
-            type="button"
-            :class="[
-              classes.categoryRow,
-              selectedCategorySlugs.includes(category.slug) && classes.categoryRowActive
-            ]"
-            :aria-pressed="selectedCategorySlugs.includes(category.slug)"
-            @click="$emit('toggleCategory', category.slug)"
+            :class="classes.futureCategoryRow"
           >
             <span :class="classes.categoryIcon">{{ getIcon(category) }}</span>
             <span :class="classes.categoryLabel">{{ category.label }}</span>
-            <span :class="classes.categoryCount">{{ category.count ?? 0 }}</span>
-          </button>
-        </TransitionGroup>
-      </div>
-      <button
-        v-if="hasMoreCategories"
-        type="button"
-        :class="classes.expandButton"
-        @click="categoriesExpanded = !categoriesExpanded"
-      >
-        {{ categoriesExpanded ? 'Скрыть ▴' : 'Показать ещё ▾' }}
-      </button>
+            <span :class="classes.categorySoonBadge">Скоро</span>
+          </div>
+        </div>
+      </Transition>
     </section>
 
     <section aria-labelledby="catalog-price-title" :class="classes.section">
@@ -412,8 +410,15 @@ const classes = {
 }
 
 .filter-panel-category-row {
+  border: 1px solid transparent;
+  border-radius: 0.9rem;
   background: transparent;
-  border: none;
+  outline: none;
+  min-height: 2.65rem;
+  transition:
+    background-color 190ms ease-out,
+    border-color 190ms ease-out,
+    color 190ms ease-out;
 }
 
 .filter-panel-brand-row:hover,
@@ -431,8 +436,10 @@ const classes = {
     0 0 0 3px rgba(var(--color-primary-rgb), 0.2);
 }
 
-.filter-panel-category-row:hover {
-  background: transparent;
+.filter-panel-category-row:hover,
+.filter-panel-category-row:focus-visible {
+  border-color: rgba(var(--color-border-rgb), 0.18);
+  background: rgba(var(--color-text-rgb), 0.045);
 }
 
 .filter-panel-brand-row-active {
@@ -442,52 +449,100 @@ const classes = {
 }
 
 .filter-panel-category-row-active {
-  background: transparent;
+  border-color: rgba(var(--color-primary-rgb), 0.22);
+  background: rgba(var(--color-primary-rgb), 0.075);
   color: var(--color-primary);
 }
 
+.filter-panel-category-row-future {
+  cursor: default;
+  color: rgba(var(--color-text-rgb), 0.72);
+}
+
+.filter-panel-category-row-future:hover {
+  border-color: rgba(var(--color-border-rgb), 0.14);
+  background: rgba(var(--color-text-rgb), 0.03);
+}
+
+.filter-panel-category-soon {
+  border: 1px solid rgba(var(--color-border-rgb), 0.16);
+  border-radius: 999px;
+  background: rgba(var(--color-text-rgb), 0.055);
+  color: rgba(var(--color-text-rgb), 0.62);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0.32rem 0.5rem;
+  white-space: nowrap;
+}
+
 .filter-panel-expand-btn {
-  background: transparent;
-  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  background: rgba(var(--color-text-rgb), 0.035);
+  border: 1px solid rgba(var(--color-border-rgb), 0.12);
+  border-radius: 0.95rem;
   color: var(--color-text);
-  padding-left: 0;
-  padding-right: 0;
-  justify-content: flex-start;
-  text-align: left;
+  min-height: 2.65rem;
+  line-height: 1.18;
 }
 
 .filter-panel-expand-btn:hover {
-  background: rgba(var(--color-text-rgb), 0.04);
+  border-color: rgba(var(--color-border-rgb), 0.2);
+  background: rgba(var(--color-text-rgb), 0.055);
+}
+
+.filter-panel-expand-btn__chevron {
+  flex-shrink: 0;
+  color: rgba(var(--color-text-rgb), 0.62);
+  transition: transform 220ms ease-out;
+}
+
+.filter-panel-expand-btn__chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.filter-panel-expand-btn__label {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.28rem;
+  font-size: clamp(0.78rem, 0.9vw, 0.875rem);
+  line-height: 1.2;
+}
+
+.filter-panel-expand-btn__label span {
+  white-space: nowrap;
 }
 
 .filter-panel-category-extra {
   display: grid;
   gap: 0.5rem;
+  margin-top: 0.5rem;
   overflow: hidden;
 }
 
 .filter-category-reveal-enter-active,
 .filter-category-reveal-leave-active {
   transition:
-    opacity 190ms ease-out,
-    transform 190ms ease-out,
-    max-height 220ms ease-out,
-    margin 220ms ease-out;
+    opacity 240ms ease-out,
+    max-height 260ms ease-out;
+  max-height: 32rem;
 }
 
 .filter-category-reveal-enter-from,
 .filter-category-reveal-leave-to {
   max-height: 0;
-  margin-top: -0.35rem;
   opacity: 0;
-  transform: translateY(-0.25rem);
 }
 
 .filter-category-reveal-enter-to,
 .filter-category-reveal-leave-from {
-  max-height: 3rem;
+  max-height: 32rem;
   opacity: 1;
-  transform: translateY(0);
 }
 
 /* Dual range slider */

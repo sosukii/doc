@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { Product } from '~/composables/useCatalog'
+import { getNumericPrice } from '~/utils/price'
 
 export interface CartItem {
   product: Product
@@ -12,7 +13,7 @@ export const useCartStore = defineStore('cart', {
   }),
   getters: {
     totalItems: (state) => state.items.reduce((sum, item) => sum + item.quantity, 0),
-    totalPrice: (state) => state.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+    totalPrice: (state) => state.items.reduce((sum, item) => sum + getNumericPrice(item.product.price) * item.quantity, 0)
   },
   actions: {
     addToCart(product: Product) {

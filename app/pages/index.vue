@@ -83,6 +83,7 @@ useSeoMeta({
       </div>
     </section>
 
+    <HomeBannersSection />
     <LazyHomeEcosystemSection :items="ecosystemItems" />
     <LazyHomeStatsSection />
     <LazyHomeCtaSection />

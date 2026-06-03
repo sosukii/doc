@@ -57,7 +57,7 @@ const { openPriceRequest } = usePriceRequest()
 const { waitForIdleTime } = useBackgroundPrefetchQueue()
 const { getBrandLabel, getCategoryLabel } = useCatalogMetadata()
 const productSlug = computed(() => String(route.params.id || ''))
-const apiBase = config.public.apiBase || 'https://doc-api-r2vu.onrender.com'
+const apiBase = config.public.apiBase || 'https://api.aventcompany.shop'
 const failedRelatedImages = ref<Record<string, true>>({})
 
 const { data: product, error } = await useFetch<Product>(`/api/products/${productSlug.value}`, {

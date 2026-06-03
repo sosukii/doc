@@ -14,9 +14,9 @@ const { enqueue, hasCompleted, remove } = useBackgroundPrefetchQueue()
 const staticRoutesToWarm = ['/contacts', '/services', '/brands', '/delivery', '/privacy', '/terms']
 const apiOrigin = (() => {
   try {
-    return new URL(config.public.apiBase || 'https://api.aventcompany.shop').origin
+    return new URL(config.public.apiBase).origin
   } catch {
-    return 'https://api.aventcompany.shop'
+    return ''
   }
 })()
 

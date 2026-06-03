@@ -97,7 +97,7 @@ const runWithConcurrency = async <T>(items: T[], concurrency: number, task: (ite
 
 export const useCatalog = () => {
   const config = useRuntimeConfig()
-  const apiBase = config.public.apiBase || 'https://api.aventcompany.shop'
+  const apiBase = config.public.apiBase
   const productsCache = useState<Record<string, CachedProductsPage>>('catalog-products-cache', () => ({}))
   const pendingRequests = useState<Record<string, Promise<ProductsResponse>>>('catalog-products-pending', () => ({}))
   const hydratedFromSession = useState('catalog-products-cache-hydrated', () => false)

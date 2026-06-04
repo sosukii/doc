@@ -122,8 +122,7 @@ export default defineNuxtConfig({
     // NuxtImg as a declarative wrapper and let origin/CDN caching serve files.
     provider: 'none',
     domains: [
-      'res.cloudinary.com',
-      'images.unsplash.com'
+      'res.cloudinary.com'
     ]
   },
 

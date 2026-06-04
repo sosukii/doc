@@ -111,8 +111,6 @@ useHead({
   link: [
     { rel: 'preconnect', href: apiOrigin, crossorigin: '' },
     { rel: 'dns-prefetch', href: apiOrigin },
-    { rel: 'preconnect', href: 'https://images.unsplash.com', crossorigin: '' },
-    { rel: 'dns-prefetch', href: 'https://images.unsplash.com' },
     { rel: 'preconnect', href: CLOUDINARY_ORIGIN, crossorigin: '' },
     { rel: 'dns-prefetch', href: CLOUDINARY_ORIGIN }
   ]

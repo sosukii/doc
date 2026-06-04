@@ -6,29 +6,29 @@ const ecosystemItems = [
     title: 'Умное освещение',
     description: 'Адаптивные световые сценарии для вашего пространства.',
     icon: '💡',
-    image: 'https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=800&auto=format&fit=crop'
+    image: '/img/eco-light.svg'
   },
   {
     title: 'Акустический комфорт',
     description: 'Интегрированные аудиосистемы высокого разрешения.',
     icon: '🔊',
-    image: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?q=80&w=800&auto=format&fit=crop'
+    image: '/img/eco-sound.svg'
   },
   {
     title: 'Климат-контроль',
     description: 'Автоматическое поддержание идеальных параметров воздуха.',
     icon: '🌡️',
-    image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=800&auto=format&fit=crop'
+    image: '/img/eco-climate.svg'
   },
   {
     title: 'Системы безопасности',
     description: 'Интеллектуальный мониторинг и защита в режиме 24/7.',
     icon: '🛡️',
-    image: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=800&auto=format&fit=crop'
+    image: '/img/eco-security.svg'
   }
 ]
 
-const heroImage = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200&auto=format&fit=crop'
+const heroImage = '/img/hero.svg'
 
 useHead({
   link: [

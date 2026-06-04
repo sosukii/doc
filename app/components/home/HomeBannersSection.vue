@@ -26,7 +26,7 @@ const config = useRuntimeConfig()
 
 const fetchBanners = async () => {
   try {
-    const data = await $fetch<Banner[]>(`${config.public.apiBase}/admin/banners`)
+    const data = await $fetch<Banner[]>(`${config.public.apiBase}/admin/banners/public`)
     banners.value = data.filter((b) => b.visible)
   } catch {
     banners.value = []
